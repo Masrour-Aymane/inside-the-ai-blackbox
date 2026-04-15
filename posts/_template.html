@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POST TITLE — My Blog</title>
+  <title>POST TITLE — Inside the AI Blackbox</title>
   <link rel="stylesheet" href="../css/style.css">
-  <!-- Uncomment the lines below if you need math rendering (KaTeX) -->
+  <!-- Uncomment if you need math rendering -->
   <!--
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
@@ -14,10 +14,16 @@
 </head>
 <body>
 
+  <!-- Reading Progress -->
+  <div class="reading-progress"></div>
+
   <!-- ═══ Header ═══ -->
   <header class="site-header">
     <div class="site-header-inner">
-      <a href="../index.html" class="site-logo"><span>&bull;</span> my blog</a>
+      <a href="../index.html" class="site-logo">
+        <span class="logo-box">■</span>
+        Inside the AI Blackbox
+      </a>
       <nav>
         <ul class="site-nav">
           <li><a href="../index.html">Posts</a></li>
@@ -35,14 +41,14 @@
       <p class="subtitle">A short subtitle or description.</p>
       <div class="article-meta">
         <span>Month Year</span>
-        <span>&middot;</span>
+        <span>·</span>
         <span>Topic</span>
       </div>
     </div>
 
     <div class="article-content">
 
-      <!-- Your content goes here -->
+      <!-- Write your content here -->
       <h2>Section Title</h2>
       <p>Your text...</p>
 
@@ -51,10 +57,11 @@
 
   <!-- ═══ Footer ═══ -->
   <footer class="site-footer">
-    &copy; 2026 &middot; Built with plain HTML &middot; Hosted on GitHub Pages
+    &copy; 2026 · <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">Source</a> · Hosted on GitHub Pages
   </footer>
 
-  <!-- Uncomment for KaTeX math rendering -->
+  <script src="../js/main.js"></script>
+  <!-- Uncomment for KaTeX -->
   <!--
   <script>
     document.addEventListener("DOMContentLoaded", function() {
