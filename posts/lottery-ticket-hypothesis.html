@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Lottery Ticket Hypothesis as a Pigeonhole Argument</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══ Header ═══ -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="../index.html" class="site-logo"><span>&bull;</span> my blog</a>
+      <nav>
+        <ul class="site-nav">
+          <li><a href="../index.html">Posts</a></li>
+          <li><a href="../about.html">About</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══ Article ═══ -->
+  <article class="article-container">
+    <div class="article-header">
+      <a href="../index.html" class="article-back">← Back to all posts</a>
+      <h1>The Lottery Ticket Hypothesis as a Pigeonhole Argument</h1>
+      <p class="subtitle">Why overparameterized random networks contain winning subnetworks, what this proves, and what it leaves open for practitioners.</p>
+      <div class="article-meta">
+        <span>April 2026</span>
+        <span>&middot;</span>
+        <span>Deep Learning</span>
+      </div>
+    </div>
+
+    <div class="article-content">
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li>The Observation: Most Weights Are Disposable</li>
+    <li>The Lottery Ticket Hypothesis</li>
+    <li>The Combinatorial Argument: Why Winning Tickets Must Exist</li>
+    <li>The Strong Lottery Ticket Theorem</li>
+    <li>Finding Tickets: Iterative Magnitude Pruning</li>
+    <li>The Rewinding Refinement</li>
+    <li>Scaling: Where Lottery Tickets Survive and Where They Break</li>
+    <li>The Gap: What We Cannot Yet Prove</li>
+    <li>What the Theory Actually Tells a Practitioner</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════ SECTION 1 ═══════════════════════════════════════ -->
+<h2><span class="section-num">1.</span> The Observation: Most Weights Are Disposable</h2>
+
+<p>
+Take a trained neural network with \(D\) parameters. Set the smallest 90% of weights to zero. Evaluate on the test set. In a wide range of architectures — convolutional networks, recurrent networks, transformers — the pruned network retains most of its accuracy. In many cases, more than 95% of weights can be removed with less than 1% accuracy degradation (Han, Mao &amp; Dally, 2016).
+</p>
+
+<p>
+This observation is so consistent across architectures and tasks that it demands explanation. If only 5–10% of the weights matter for the final function, why do we need the other 90–95% during training? And if we could identify the important weights <em>in advance</em>, could we skip the cost of training the full network entirely?
+</p>
+
+<blockquote>
+The lottery ticket hypothesis gives a precise formulation of this question and a surprising partial answer: the important subnetwork is already present at initialization — it just needs to be found.
+</blockquote>
+
+<!-- ═══════════════════════════════════════ SECTION 2 ═══════════════════════════════════════ -->
+<h2><span class="section-num">2.</span> The Lottery Ticket Hypothesis</h2>
+
+<p>
+Frankle and Carlin (2019) formulated the lottery ticket hypothesis as follows:
+</p>
+
+<div class="definition">
+  <div class="definition-title">The Lottery Ticket Hypothesis (Frankle &amp; Carlin, 2019)</div>
+  <p>
+  A randomly initialized, dense neural network contains a subnetwork — a <em>winning ticket</em> — that, when trained in isolation from the same initialization, can match the test accuracy of the full network after training for at most the same number of iterations.
+  </p>
+</div>
+
+<p>
+The terminology is deliberate: training a large network is like buying many lottery tickets. Most individual tickets (weights) are losers. But with enough tickets, you are guaranteed to hold a winning combination. The hypothesis says something stronger than post-hoc pruning: the winning subnetwork exists <em>at initialization</em>, before any training has occurred.
+</p>
+
+<h3>Formal setup</h3>
+<p>
+Let \(f(x; \theta)\) be a network with parameters \(\theta \in \mathbb{R}^D\), initialized at \(\theta_0\). A subnetwork is defined by a binary mask \(m \in \{0, 1\}^D\), and the masked network is \(f(x; m \odot \theta)\), where \(\odot\) denotes elementwise multiplication. The mask sets a subset of weights to zero permanently — both at initialization and throughout training. Denote the sparsity as \(s = 1 - \|m\|_0 / D\), the fraction of weights removed.
+</p>
+
+<p>
+The hypothesis asserts: there exists a mask \(m\) with high sparsity \(s\) (say, \(s \ge 0.9\)) such that training \(f(x; m \odot \theta_0)\) with the same optimizer and schedule as the dense network yields comparable test accuracy.
+</p>
+
+<div class="remark">
+  <div class="remark-title">Remark — The mask depends on the initialization</div>
+  <p>
+  A crucial subtlety: the winning mask \(m\) is not universal. It depends on the specific random initialization \(\theta_0\). A different random seed produces a different winning ticket. This is not a defect — it reflects the fact that the combinatorial structure of which subnetwork is "good" is entangled with the specific initial weight values. The practical consequence is that you cannot find the mask without reference to the full network, which is why the finding algorithm (Section 5) requires training the full network at least once.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════ SECTION 3 ═══════════════════════════════════════ -->
+<h2><span class="section-num">3.</span> The Combinatorial Argument: Why Winning Tickets Must Exist</h2>
+
+<p>
+Before examining the formal theorems, it is worth understanding why the existence of winning tickets in large random networks is almost <em>inevitable</em> from basic combinatorics. The argument is a form of the pigeonhole principle applied to subnetwork enumeration.
+</p>
+
+<h3>Counting subnetworks</h3>
+<p>
+Consider a network with \(D\) weights. The number of possible subnetworks at sparsity \(s\) (keeping \(k = (1-s)D\) weights) is:
+</p>
+
+<div class="equation-block">
+$$\binom{D}{k} = \binom{D}{(1-s)D}.$$
+</div>
+
+<p>
+For even moderate \(D\) and \(s\), this number is astronomically large. Using Stirling's approximation:
+</p>
+
+<div class="equation-block">
+$$\log_2 \binom{D}{(1-s)D} \;\approx\; D \cdot H(s),$$
+</div>
+
+<p>
+where \(H(s) = -s\log_2 s - (1-s)\log_2(1-s)\) is the binary entropy function. At sparsity \(s = 0.9\), we have \(H(0.9) \approx 0.469\), so the number of distinct subnetworks is roughly \(2^{0.469 D}\).
+</p>
+
+<p>
+For a ResNet-50 with \(D \approx 25 \times 10^6\), even at 90% sparsity, the number of possible subnetworks is:
+</p>
+
+<div class="equation-block">
+$$\binom{25 \times 10^6}{2.5 \times 10^6} \;\approx\; 2^{11.7 \times 10^6}.$$
+</div>
+
+<p>
+This is a number with roughly 3.5 million digits. The set of all continuous functions that a subnetwork of 2.5 million parameters can represent is vastly smaller than \(2^{11.7 \times 10^6}\), but the sheer combinatorial diversity of possible subnetworks means that <em>many</em> different subsets of the original weights can approximate any given target function — as long as the initial weights have sufficient diversity.
+</p>
+
+<h3>The pigeonhole intuition</h3>
+
+<p>
+The argument proceeds in three steps:
+</p>
+
+<p>
+<strong>Step 1.</strong> A random initialization \(\theta_0 \sim \mathcal{N}(0, \sigma^2 I)\) populates \(\mathbb{R}^D\) with i.i.d. entries. For any target weight value \(w^*\), the probability that at least one of the \(D\) random weights falls within \(\varepsilon\) of \(w^*\) is:
+</p>
+
+<div class="equation-block">
+$$1 - \left(1 - \frac{2\varepsilon}{\sigma\sqrt{2\pi}} \cdot e^{-{w^*}^2/(2\sigma^2)}\right)^D \;\approx\; 1 - e^{-D \cdot p_\varepsilon},$$
+</div>
+
+<p>
+where \(p_\varepsilon\) is the probability that a single weight falls in the \(\varepsilon\)-ball around \(w^*\). When \(D\) is large, this probability approaches 1 rapidly. With \(D = 25 \times 10^6\) weights, even rare values are represented multiple times.
+</p>
+
+<p>
+<strong>Step 2.</strong> A target subnetwork has \(k\) specific weight values it needs to match. By Step 1, each target value is present (approximately) somewhere in the random initialization. The question is whether we can <em>simultaneously</em> match all \(k\) values using distinct weights from the original network.
+</p>
+
+<p>
+<strong>Step 3.</strong> This is a bipartite matching problem. We have \(D\) random weights (the "pigeonholes") and \(k\) target values (the "pigeons"), with \(k \ll D\). By Hall's marriage theorem, a perfect matching exists if and only if every subset of target values has enough candidate weights nearby. When \(D/k\) is large (i.e., sparsity is high), the random initialization provides enough "coverage" of weight space that the matching exists with high probability.
+</p>
+
+<div class="remark">
+  <div class="remark-title">Remark — This argument is about existence, not constructive finding</div>
+  <p>
+  The combinatorial argument shows that a good subnetwork <em>exists</em> in a large random network. It says nothing about how to find it efficiently. The search space — \(2^{0.469 D}\) possible masks — is far too large for brute force. The practical algorithms in Sections 5 and 6 use training dynamics as a heuristic to identify the winning ticket. The gap between existential guarantee and efficient discovery is the central tension of the lottery ticket program.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════ SECTION 4 ═══════════════════════════════════════ -->
+<h2><span class="section-num">4.</span> The Strong Lottery Ticket Theorem</h2>
+
+<p>
+The informal pigeonhole argument of Section 3 was made rigorous by a series of results beginning with Malach, Yehudai, Shalev-Shwartz, and Shamir (2020) and culminating in the following theorem:
+</p>
+
+<div class="theorem">
+  <div class="theorem-title">Theorem 1 — Existence of approximating subnetworks (Malach, Yehudai, Shalev-Shwartz &amp; Shamir, 2020)</div>
+  <p>
+  Let \(f^* : \mathbb{R}^n \to \mathbb{R}\) be a target network with \(d\) hidden units and bounded weights \(\|w_i^*\| \le W\). Let \(F\) be a randomly initialized network of the same architecture but with width \(m\) per layer, with weights drawn i.i.d. from a symmetric distribution with bounded density. Then for any \(\varepsilon > 0\), if:
+  </p>
+  <div class="equation-block">
+  $$m \;\ge\; \Omega\!\left(\frac{d^2 W^2}{\varepsilon^2} \cdot \log\frac{d}{\delta}\right),$$
+  </div>
+  <p>
+  there exists a subnetwork of \(F\) (obtained by pruning — setting weights to zero) that \(\varepsilon\)-approximates \(f^*\) uniformly over any bounded domain, with probability at least \(1 - \delta\) over the random initialization.
+  </p>
+</div>
+
+<p>
+The key feature of this theorem is the relationship between the overparameterization factor \(m/d\) and the approximation quality \(\varepsilon\). The random network needs to be wider than the target by a factor that is polynomial in \(d/\varepsilon\) — large, but not exponential. This is what makes the result nontrivial: a polynomially overparameterized random network contains a subnetwork that approximates any target of the given size, <em>without any training of the large network's weights</em>.
+</p>
+
+<div class="remark">
+  <div class="remark-title">Remark — No training required for the existence result</div>
+  <p>
+  Theorem 1 is a statement about <em>random</em> networks at initialization. The subnetwork is found by pruning alone — the weights of the large network are never modified. This is a stronger claim than the original lottery ticket hypothesis, which allows the subnetwork to be <em>retrained</em> from its initial values. Pensia, Rajput, Nagle, Vishwanath, and Pillai (2020) and Orseau, Hutter, and Rivasplata (2020) independently proved similar results with tighter bounds and different proof techniques.
+  </p>
+</div>
+
+<h3>Proof sketch</h3>
+<p>
+The proof of Theorem 1 proceeds by a covering argument that formalizes the pigeonhole intuition:
+</p>
+
+<p>
+<strong>(a) Neuron matching.</strong> Each hidden neuron in the target network \(f^*\) is characterized by a weight vector \(w_i^* \in \mathbb{R}^n\) and a bias \(b_i^*\). The random network \(F\) has \(m\) neurons per layer, each with random weights. By concentration of measure, for large enough \(m\), at least one neuron in \(F\) has its weight vector within \(\varepsilon/d\) of \(w_i^*\) in angular distance.
+</p>
+
+<p>
+<strong>(b) Subset selection.</strong> By a union bound over the \(d\) target neurons, with \(m = \Omega(d^2/\varepsilon^2 \cdot \log(d/\delta))\), every target neuron is \(\varepsilon/d\)-matched by at least one neuron in \(F\), simultaneously, with probability \(\ge 1 - \delta\).
+</p>
+
+<p>
+<strong>(c) Output layer construction.</strong> The subnetwork is formed by keeping the matched neurons and zeroing out all others. The second-layer weights are set to match the target's output weights (or are pruned from a sufficiently wide second layer by the same argument). The total approximation error is \(\varepsilon\), accumulated as \(d\) neuron-level errors of order \(\varepsilon/d\).
+</p>
+
+<h3>Deeper networks: the Ramanujan et al. result</h3>
+<p>
+Ramanujan, Wortsman, Kembhavi, Farhadi, and Rastegari (2020) extended the existence result algorithmically by showing that for practical architectures (ResNets on ImageNet), one can find subnetworks of a random network that match the accuracy of the trained full network — using a score-based search over masks rather than weight training. Their algorithm optimizes a continuous relaxation of the mask \(m\) by gradient descent on a "popup" score for each weight, keeping the weights themselves frozen at their random initialization.
+</p>
+
+<div class="theorem">
+  <div class="theorem-title">Key Empirical Result — Ramanujan, Wortsman, Kembhavi, Farhadi &amp; Rastegari (2020)</div>
+  <p>
+  For a randomly initialized (untrained) ResNet-50 that is \(2\times\) wider than standard, searching for a subnetwork by optimizing only binary masks (no weight updates) yields a sparse subnetwork that achieves test accuracy within 1–2% of a fully trained standard-width ResNet-50 on ImageNet.
+  </p>
+</div>
+
+<p>
+This is a remarkable empirical confirmation of Theorem 1: the "winning ticket" is not merely a mathematical existence result — it can be found in practice for realistic architectures and datasets, and the required overparameterization factor is modest (roughly \(2\times\) in width, which corresponds to \(4\times\) in parameter count for convolutional layers).
+</p>
+
+<!-- ═══════════════════════════════════════ SECTION 5 ═══════════════════════════════════════ -->
+<h2><span class="section-num">5.</span> Finding Tickets: Iterative Magnitude Pruning</h2>
+
+<p>
+The original lottery ticket experiments use a specific algorithm to discover winning tickets. The algorithm is simple, and its simplicity is part of the point — it shows that training itself reveals which weights matter.
+</p>
+
+<div class="definition">
+  <div class="definition-title">Algorithm — Iterative Magnitude Pruning (IMP)</div>
+  <p>
+  <strong>Input:</strong> Network \(f(x; \theta)\), initialization \(\theta_0\), target sparsity \(s\), pruning rounds \(R\).
+  </p>
+  <p><strong>1.</strong> Initialize \(\theta = \theta_0\).</p>
+  <p><strong>2.</strong> For each round \(r = 1, \ldots, R\):</p>
+  <p>&emsp; (a) Train the network to convergence (or for a fixed number of epochs).</p>
+  <p>&emsp; (b) Prune: remove the \(s^{1/R}\) fraction of remaining weights with the smallest absolute value.</p>
+  <p>&emsp; (c) <strong>Reset</strong> the surviving weights to their values at initialization \(\theta_0\).</p>
+  <p><strong>3.</strong> Train the final sparse network from the reset initialization.</p>
+  <p>
+  <strong>Output:</strong> A mask \(m\) and the original initialization \(\theta_0\), such that training \(f(x; m \odot \theta_0)\) yields accuracy comparable to the dense network.
+  </p>
+</div>
+
+<p>
+The critical step is (c): the reset to the <em>original</em> initialization. The algorithm uses training to identify which weights are important (by magnitude after training), but then discards the trained values and retrains from scratch. This is what validates the lottery ticket hypothesis — the subnetwork defined by the mask \(m\), when trained from its original random values \(m \odot \theta_0\), achieves comparable performance. The trained weights were used only as a signal for mask selection.
+</p>
+
+<h3>Why magnitude pruning works</h3>
+<p>
+The use of weight magnitude as a pruning criterion has a simple justification. At convergence, the loss can be locally approximated by a quadratic:
+</p>
+
+<div class="equation-block">
+$$\mathcal{L}(\theta) \;\approx\; \mathcal{L}(\theta^*) + \frac{1}{2}(\theta - \theta^*)^\top H (\theta - \theta^*).$$
+</div>
+
+<p>
+Setting weight \(\theta_i\) to zero incurs an increase in loss approximately proportional to \(H_{ii} \cdot \theta_i^2\). If the diagonal Hessian entries are roughly similar across weights (a crude but empirically reasonable approximation for many architectures), then the loss increase is dominated by \(\theta_i^2\) — the squared magnitude. Pruning the smallest-magnitude weights minimizes the total loss increase under this approximation.
+</p>
+
+<div class="remark">
+  <div class="remark-title">Remark — Optimal Brain Surgeon and beyond</div>
+  <p>
+  More refined pruning criteria exist. LeCun, Denker, and Solla (1990) proposed Optimal Brain Damage, which uses diagonal Hessian entries \(H_{ii} \theta_i^2\) directly. Hassibi and Stork (1993) proposed Optimal Brain Surgeon, which accounts for off-diagonal Hessian terms. These methods are more principled but more expensive. The practical success of simple magnitude pruning suggests that the diagonal approximation — while crude — captures enough structure in the networks typically studied. For highly structured or quantized networks, more sophisticated criteria can matter.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════ SECTION 6 ═══════════════════════════════════════ -->
+<h2><span class="section-num">6.</span> The Rewinding Refinement</h2>
+
+<p>
+The original lottery ticket hypothesis — reset to the exact initialization \(\theta_0\) — works reliably for small networks and datasets (MNIST, CIFAR-10). For larger-scale problems, Frankle, Dziugaite, Roy, and Carlin (2020) found that resetting to \(\theta_0\) fails: the sparse subnetwork does not train to competitive accuracy. However, a simple modification restores the result.
+</p>
+
+<div class="definition">
+  <div class="definition-title">Definition — Rewinding</div>
+  <p>
+  Instead of resetting to the initialization \(\theta_0\), reset the surviving weights to their values at an early training iteration \(\theta_k\), where \(k\) is typically 0.1–10% of the total training iterations. The mask is still determined by magnitude pruning at the end of full training, but the subnetwork is retrained starting from \(\theta_k\) rather than \(\theta_0\).
+  </p>
+</div>
+
+<p>
+Rewinding to iteration \(k\) instead of iteration 0 consistently recovers the lottery ticket result at scale. Frankle et al. (2020) showed that for ResNet-50 on ImageNet, rewinding to iteration \(k\) corresponding to roughly 1–3% of total training finds tickets at 80% sparsity that match the full network's accuracy, whereas resetting to \(\theta_0\) does not.
+</p>
+
+<h3>Why rewinding is necessary at scale</h3>
+<p>
+The need for rewinding reflects a genuine phenomenon: the first few iterations of training perform a form of "alignment" that is necessary for the subnetwork to be trainable. Specifically:
+</p>
+
+<p>
+<strong>Learning rate sensitivity.</strong> At random initialization, the loss landscape is highly chaotic and the optimal learning rate depends on the full network's geometry. After a few iterations, the weights settle into a region where the sparse subnetwork's loss landscape is better conditioned. Resetting to \(\theta_0\) reintroduces the chaotic initial geometry, which the sparse network cannot navigate with the same learning rate schedule.
+</p>
+
+<p>
+<strong>Symmetry breaking.</strong> Random initialization places many neurons in near-symmetric configurations. The first few training steps break these symmetries. A sparse subnetwork inherits the symmetry-broken configuration from \(\theta_k\), which is essential for trainability (Evci, Ioannou, Keskin &amp; Dauphin, 2022).
+</p>
+
+<div class="remark">
+  <div class="remark-title">Remark — The stability hypothesis</div>
+  <p>
+  Frankle et al. (2020) proposed the <em>linear mode connectivity</em> test as a diagnostic: a subnetwork is "stable" if the loss along the linear path between the retrained subnetwork \(\theta_{\text{final}}\) and a differently-seeded retrained subnetwork from the same mask and initialization \(\theta_{\text{final}}'\) remains low. They found that stability (in this sense) emerges at the same iteration \(k\) at which rewinding begins to work. This provides an operational criterion for choosing \(k\), though the theoretical explanation for why this particular stability notion is the relevant one remains open.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════ SECTION 7 ═══════════════════════════════════════ -->
+<h2><span class="section-num">7.</span> Scaling: Where Lottery Tickets Survive and Where They Break</h2>
+
+<p>
+The lottery ticket hypothesis has been tested across a wide range of scales. The results are instructive because they reveal the boundaries of the phenomenon.
+</p>
+
+<h3>Where it works well</h3>
+<p>
+<strong>Vision (CNNs, ViTs):</strong> Lottery tickets have been found reliably in convolutional networks on CIFAR-10 and ImageNet. Chen, Frankle, Chang, Liu, Zhang, and Carlin (2021) showed that Vision Transformers also contain lottery tickets at 50–70% sparsity with minimal accuracy loss.
+</p>
+<p>
+<strong>BERT and medium-scale NLP:</strong> Chen, Frankle, Chang, Liu, Zhang, Wang, and Carlin (2020) found matching subnetworks in BERT at 40–60% sparsity for a range of GLUE tasks.
+</p>
+
+<h3>Where it becomes difficult</h3>
+<p>
+<strong>Large language models (GPT-scale):</strong> As model size grows into the billions, the standard IMP algorithm becomes prohibitively expensive — it requires multiple rounds of full training. Furthermore, the "rewinding" iteration \(k\) becomes a sensitive hyperparameter. Recent work on structured pruning and one-shot pruning (Sun, Liu, Bair, and Kolter, 2024; Frantar and Alistarh, 2023) addresses the computational cost but departs from the original lottery ticket framework in important ways.
+</p>
+<p>
+<strong>Transfer across tasks:</strong> A lottery ticket found on one task does not generally transfer to a different task (Morcos, Yu, Paganini &amp; Tian, 2019, found partial transfer within similar datasets, but the transfer degrades as task similarity decreases). This is consistent with the theory: the mask is entangled with both the initialization and the task's loss landscape.
+</p>
+
+<h3>The sparsity–accuracy tradeoff</h3>
+<p>
+Across all settings, there is a characteristic phase transition in the sparsity–accuracy curve. Performance is roughly constant as sparsity increases from 0 to some critical value \(s_{\text{crit}}\), then drops sharply. The critical sparsity depends on the architecture and task but is typically in the range \(s_{\text{crit}} \in [0.8, 0.98]\). At \(s > s_{\text{crit}}\), the subnetwork no longer has enough capacity to represent the target function, regardless of the mask.
+</p>
+
+<div class="theorem">
+  <div class="theorem-title">Empirical observation — Phase transition in pruning</div>
+  <p>
+  For a trained network with \(D\) parameters and test accuracy \(A^*\), let \(A(s)\) be the accuracy of the best pruned subnetwork at sparsity \(s\). Empirically:
+  </p>
+  <div class="equation-block">
+  $$A(s) \approx \begin{cases} A^* & \text{if } s < s_{\text{crit}}, \\ A^* - C(s - s_{\text{crit}})^\beta & \text{if } s \ge s_{\text{crit}}, \end{cases}$$
+  </div>
+  <p>
+  where \(\beta > 0\) and \(C > 0\) are architecture- and task-dependent constants. The transition is sharper (larger \(\beta\)) for more structured tasks and for architectures with less redundancy.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════ SECTION 8 ═══════════════════════════════════════ -->
+<h2><span class="section-num">8.</span> The Gap: What We Cannot Yet Prove</h2>
+
+<p>
+The lottery ticket literature combines rigorous existence theorems (Section 4) with extensive empirical work (Sections 5–7). The gap between the two is substantial.
+</p>
+
+<h3>What is proved</h3>
+<p>
+(i) <strong>Existence of approximating subnetworks in random networks:</strong> Theorem 1 and its extensions prove that a polynomially overparameterized random network contains a subnetwork approximating any target function of a given size. The bound on the required overparameterization is explicit (polynomial in \(d/\varepsilon\)).
+</p>
+<p>
+(ii) <strong>Combinatorial counting:</strong> The number of possible subnetworks grows exponentially in \(D\), providing an enormous "search space" of candidate functions. This is pure combinatorics and requires no assumptions.
+</p>
+<p>
+(iii) <strong>Magnitude pruning is optimal for quadratic losses:</strong> Under the diagonal Hessian approximation, magnitude pruning minimizes the increase in loss per weight removed. This is a calculus result.
+</p>
+
+<h3>What is not proved</h3>
+<p>
+<strong>That IMP finds the optimal mask.</strong> There is no guarantee that iterative magnitude pruning finds the best sparse subnetwork, or even a subnetwork close to the best. The search problem over \(2^D\) binary masks is NP-hard in general (finding the sparsest subnetwork achieving a given accuracy is at least as hard as subset selection in sparse regression). IMP is a heuristic that works well empirically, but its success has no theoretical explanation beyond the crude magnitude-Hessian argument.
+</p>
+<p>
+<strong>Why rewinding to early training (not initialization) is necessary at scale.</strong> The rewinding phenomenon is reproducible and well-characterized empirically, but there is no theorem that predicts the critical rewinding iteration \(k\) as a function of architecture, dataset, or sparsity. The "linear mode connectivity" diagnostic (Section 6) is an empirical correlation, not a causal explanation.
+</p>
+<p>
+<strong>A tight overparameterization bound for practical architectures.</strong> Theorem 1 requires width \(m = \Omega(d^2 / \varepsilon^2)\) for a target of width \(d\). In practice, a factor of \(2\times\) in width often suffices (Ramanujan et al., 2020). The gap between the proved bound and the empirical requirement is at least quadratic. Closing this gap — or proving that a constant-factor overparameterization suffices for specific architecture classes — is an open problem.
+</p>
+<p>
+<strong>Lottery tickets in the large language model regime.</strong> The theoretical results apply to fixed-depth networks with bounded weights. Modern LLMs have hundreds of layers, attention mechanisms, and weight distributions that change dramatically during training. Whether the combinatorial argument extends to this setting — and whether computationally feasible mask-finding algorithms exist — is not established.
+</p>
+
+<!-- ═══════════════════════════════════════ SECTION 9 ═══════════════════════════════════════ -->
+<h2><span class="section-num">9.</span> What the Theory Actually Tells a Practitioner</h2>
+
+<p>
+Given the gaps identified in Section 8, here is what the theory and experiments jointly support, organized by epistemic status.
+</p>
+
+<h3>Well-supported by theory and experiments</h3>
+<p>
+<strong>Your trained network has far more parameters than it needs for inference.</strong> This is the single most robust finding. Across every architecture and task studied, post-training pruning to 80–95% sparsity is achievable with minimal accuracy loss. If your deployment is bottlenecked by model size or inference cost, pruning is an underused tool — it is simpler to implement than distillation, often more effective than quantization at high compression ratios, and compositionally compatible with both.
+</p>
+<p>
+<strong>The large model is needed for training, not for the final function.</strong> The combinatorial argument (Section 3) and the existence theorem (Section 4) together explain why: a large random network contains an enormous combinatorial diversity of subnetworks. Training acts as a search procedure over this combinatorial space. The large model's role is to provide enough "material" for the search to succeed — like buying enough lottery tickets to guarantee a winner.
+</p>
+<p>
+<strong>Structured pruning at moderate sparsity is safe and practical.</strong> Unstructured pruning (arbitrary individual weights to zero) yields the highest sparsity for a given accuracy, but it requires sparse linear algebra support for actual speedups. Structured pruning (removing entire filters, heads, or layers) yields smaller sparsity ratios but translates directly to wall-clock speedups on standard hardware. At 50–70% structured sparsity, accuracy degradation is typically negligible.
+</p>
+
+<h3>Suggested by the evidence but not proved</h3>
+<p>
+<strong>One training run suffices to identify the important substructure.</strong> IMP requires multiple rounds of train-prune-reset, which multiplies the total training cost. One-shot pruning methods (pruning after a single training run without resetting or retraining) work surprisingly well in practice (Frantar &amp; Alistarh, 2023), suggesting that the information needed to identify the winning ticket is available after a single training run. But there is no theorem guaranteeing that one-shot pruning is near-optimal.
+</p>
+<p>
+<strong>Pruning and LoRA are attacking the same phenomenon.</strong> Both exploit the fact that the "useful" part of a neural network lives in a low-dimensional space — LoRA restricts the update space, pruning restricts the network structure. The intrinsic dimensionality results (Li et al., 2018; Aghajanyan et al., 2021) and the lottery ticket results are two views of the same underlying fact: neural networks are massively over-parameterized relative to the functions they actually compute.
+</p>
+
+<h3>Not supported by the theory</h3>
+<p>
+<strong>"You can train a small model from the start and skip the large one."</strong> This is the most common misinterpretation of the lottery ticket hypothesis. The theory says the opposite: you need the large model to <em>find</em> the winning ticket. Training a small model from a random initialization is not equivalent to training the winning subnetwork from its initialization within the large model. The initial weights of the winning ticket are not arbitrary — they are specific values from the large model's initialization that happen to be well-suited to the task. A small model with fresh random weights does not have this property.
+</p>
+<p>
+<strong>"Pruning always preserves accuracy."</strong> The phase transition (Section 7) is sharp: accuracy is stable up to a critical sparsity and then degrades rapidly. For safety-critical applications, the sparsity–accuracy curve must be characterized empirically for the specific model and task. There is no universal formula for \(s_{\text{crit}}\).
+</p>
+<p>
+<strong>"Iterative magnitude pruning is the best pruning method."</strong> IMP is the most studied method in the lottery ticket literature, but it is not the most efficient. Modern methods — SparseGPT (Frantar &amp; Alistarh, 2023), Wanda (Sun et al., 2024) — achieve comparable sparsity in a fraction of the compute by using gradient or activation information instead of iterative training. The lottery ticket framing motivated the field, but the practical state of the art has moved beyond it.
+</p>
+
+<!-- ═══════════════════════════════════════ REFERENCES ═══════════════════════════════════════ -->
+<div class="references">
+  <h2 style="border-bottom: none; margin-top: 32px;">References</h2>
+
+  <p><span class="ref-key">[Frankle &amp; Carlin, 2019]</span> J. Frankle, M. Carlin. <em>The lottery ticket hypothesis: finding sparse, trainable neural networks.</em> ICLR.</p>
+
+  <p><span class="ref-key">[Han et al., 2016]</span> S. Han, H. Mao, W. J. Dally. <em>Deep compression: compressing deep neural networks with pruning, trained quantization and Huffman coding.</em> ICLR.</p>
+
+  <p><span class="ref-key">[Malach et al., 2020]</span> E. Malach, G. Yehudai, S. Shalev-Shwartz, O. Shamir. <em>Proving the lottery ticket hypothesis: pruning is all you need.</em> ICML.</p>
+
+  <p><span class="ref-key">[Pensia et al., 2020]</span> A. Pensia, S. Rajput, A. Nagle, H. Vishwanath, A. G. Pillai. <em>Optimal lottery tickets via SubsetSum: logarithmic overparameterization is sufficient.</em> NeurIPS.</p>
+
+  <p><span class="ref-key">[Orseau et al., 2020]</span> L. Orseau, M. Hutter, O. Rivasplata. <em>Logarithmic pruning is all you need.</em> NeurIPS.</p>
+
+  <p><span class="ref-key">[Ramanujan et al., 2020]</span> V. Ramanujan, M. Wortsman, A. Kembhavi, A. Farhadi, M. Rastegari. <em>What's hidden in a randomly weighted neural network?</em> CVPR.</p>
+
+  <p><span class="ref-key">[Frankle et al., 2020]</span> J. Frankle, G. K. Dziugaite, D. Roy, M. Carlin. <em>Linear mode connectivity and the lottery ticket hypothesis.</em> ICML.</p>
+
+  <p><span class="ref-key">[Chen, Frankle, Chang, Liu, Zhang &amp; Carlin, 2021]</span> T. Chen, J. Frankle, S. Chang, S. Liu, Y. Zhang, M. Carlin. <em>The lottery ticket hypothesis for Vision Transformers.</em> arXiv:2211.01484.</p>
+
+  <p><span class="ref-key">[Chen, Frankle, Chang, Liu, Zhang, Wang &amp; Carlin, 2020]</span> T. Chen, J. Frankle, S. Chang, S. Liu, Y. Zhang, Z. Wang, M. Carlin. <em>The lottery ticket hypothesis for pre-trained BERT networks.</em> NeurIPS.</p>
+
+  <p><span class="ref-key">[Morcos et al., 2019]</span> A. Morcos, H. Yu, M. Paganini, Y. Tian. <em>One ticket to win them all: generalizing lottery ticket initializations across datasets and optimizers.</em> NeurIPS.</p>
+
+  <p><span class="ref-key">[LeCun et al., 1990]</span> Y. LeCun, J. Denker, S. Solla. <em>Optimal brain damage.</em> NeurIPS.</p>
+
+  <p><span class="ref-key">[Hassibi &amp; Stork, 1993]</span> B. Hassibi, D. Stork. <em>Second order derivatives for network pruning: Optimal Brain Surgeon.</em> NeurIPS.</p>
+
+  <p><span class="ref-key">[Evci et al., 2022]</span> U. Evci, Y. A. Ioannou, C. Keskin, Y. Dauphin. <em>Gradient flow in sparse neural networks and how lottery tickets win.</em> AAAI.</p>
+
+  <p><span class="ref-key">[Frantar &amp; Alistarh, 2023]</span> E. Frantar, D. Alistarh. <em>SparseGPT: massive language models can be accurately pruned in one-shot.</em> ICML.</p>
+
+  <p><span class="ref-key">[Sun et al., 2024]</span> M. Sun, Z. Liu, A. Bair, J. Z. Kolter. <em>A simple and effective pruning approach for large language models.</em> ICLR.</p>
+
+  <p><span class="ref-key">[Li et al., 2018]</span> C. Li, H. Farkhoor, R. Liu, J. Yosinski. <em>Measuring the intrinsic dimension of objective landscapes.</em> ICLR.</p>
+
+  <p><span class="ref-key">[Aghajanyan et al., 2021]</span> A. Aghajanyan, S. Gupta, L. Zettlemoyer. <em>Intrinsic dimensionality explains the effectiveness of language model fine-tuning.</em> ACL.</p>
+</div>
+
+    </div>
+  </article>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="site-footer">
+    &copy; 2026 &middot; Built with plain HTML &middot; Hosted on GitHub Pages
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: "$$", right: "$$", display: true},
+          {left: "\\[", right: "\\]", display: true},
+          {left: "\\(", right: "\\)", display: false},
+          {left: "$", right: "$", display: false}
+        ],
+        throwOnError: false
+      });
+    });
+  </script>
+</body>
+</html>

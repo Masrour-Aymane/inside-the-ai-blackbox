@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Blog</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══ Header ═══ -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="site-logo"><span>&bull;</span> my blog</a>
+      <nav>
+        <ul class="site-nav">
+          <li><a href="index.html" class="active">Posts</a></li>
+          <li><a href="about.html">About</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══ Hero ═══ -->
+  <main class="page-container">
+    <section class="hero">
+      <h1>Notes on machine learning, math, and things I find interesting.</h1>
+      <p>A place for long-form technical writing — theorems, intuitions, and the gaps between them.</p>
+    </section>
+
+    <!-- ═══ Posts ═══ -->
+    <section class="posts-section">
+      <div class="posts-section-title">All Posts</div>
+
+      <!-- POST 1 -->
+      <a href="posts/lottery-ticket-hypothesis.html" class="post-card">
+        <div class="post-card-meta">
+          <span class="post-card-tag">Deep Learning</span>
+          <span>April 2026</span>
+        </div>
+        <h2>The Lottery Ticket Hypothesis as a Pigeonhole Argument</h2>
+        <p>Why overparameterized random networks contain winning subnetworks, what this proves, and what it leaves open for practitioners.</p>
+        <span class="read-more">Read article</span>
+      </a>
+
+      <!--
+      ═══════════════════════════════════════════════════
+       HOW TO ADD A NEW POST:
+       1. Create a new .html file in the posts/ folder
+       2. Copy the template from posts/_template.html
+       3. Add a new <a class="post-card"> block here
+       Example:
+
+      <a href="posts/your-new-post.html" class="post-card">
+        <div class="post-card-meta">
+          <span class="post-card-tag">Topic</span>
+          <span>Month Year</span>
+        </div>
+        <h2>Your Post Title</h2>
+        <p>A short description of the post.</p>
+        <span class="read-more">Read article</span>
+      </a>
+      ═══════════════════════════════════════════════════
+      -->
+
+    </section>
+  </main>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="site-footer">
+    &copy; 2026 &middot; Built with plain HTML &middot; Hosted on GitHub Pages
+  </footer>
+
+</body>
+</html>
