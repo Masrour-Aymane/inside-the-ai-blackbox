@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From Pigeonholes to Lottery Tickets — Inside the AI Blackbox</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+  <!-- ═══ Article-specific styles: exact match to the standalone file ═══ -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400&display=swap');
+
+    .article-content {
+      font-family: 'Cormorant Garamond', 'Georgia', serif;
+      font-size: 19px;
+      line-height: 1.78;
+      color: #181410;
+    }
+
+    .article-content h2 {
+      font-family: 'Cormorant Garamond', 'Georgia', serif;
+      font-size: 1.45em;
+      font-weight: 700;
+      margin-top: 60px;
+      margin-bottom: 18px;
+      color: #181410;
+      letter-spacing: -0.01em;
+      padding-bottom: 7px;
+      border-bottom: 1.5px solid #d6cfc2;
+    }
+
+    .article-content h2 .sn {
+      color: #9b2226;
+      margin-right: 5px;
+      font-weight: 600;
+    }
+
+    .article-content h3 {
+      font-family: 'Cormorant Garamond', 'Georgia', serif;
+      font-size: 1.12em;
+      font-weight: 600;
+      margin-top: 36px;
+      margin-bottom: 12px;
+      color: #181410;
+    }
+
+    .article-content p { margin-bottom: 17px; }
+
+    .article-content .box {
+      padding: 22px 26px;
+      margin: 28px 0;
+      border-radius: 5px;
+    }
+
+    .article-content .box-title {
+      font-weight: 700;
+      font-size: 0.88em;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 11px;
+      line-height: 1.4;
+    }
+
+    .article-content .thm { background: #f5f2ec; border-left: 3.5px solid #9b2226; }
+    .article-content .thm .box-title { color: #9b2226; }
+
+    .article-content .defn { background: #f5f2ec; border-left: 3.5px solid #3d5a3e; }
+    .article-content .defn .box-title { color: #3d5a3e; }
+
+    .article-content .lem { background: #f4f1e8; border-left: 3.5px solid #8b6914; }
+    .article-content .lem .box-title { color: #8b6914; }
+
+    .article-content .rmk { background: #edf1f7; border-left: 3.5px solid #2c4a6e; }
+    .article-content .rmk .box-title { color: #2c4a6e; }
+
+    .article-content .warn { background: #fdf4ea; border-left: 3.5px solid #c07000; }
+    .article-content .warn .box-title { color: #c07000; }
+
+    .article-content .prf {
+      background: #f9f7f3;
+      border-left: 3.5px solid #a89878;
+      margin: 28px 0;
+      padding: 22px 26px;
+      border-radius: 5px;
+    }
+    .article-content .prf .box-title { color: #7a6b50; }
+    .article-content .prf .qed { text-align: right; font-size: 1.15em; margin-top: 8px; margin-bottom: 0; }
+
+    .article-content .example {
+      background: #f2f7f2;
+      border-left: 3.5px solid #5a8a5c;
+      padding: 22px 26px;
+      margin: 28px 0;
+      border-radius: 5px;
+    }
+    .article-content .example .box-title { color: #3d6a3f; }
+
+    .article-content blockquote {
+      border-left: 3px solid #d6cfc2;
+      padding-left: 22px;
+      margin: 22px 0;
+      color: #5c5347;
+      font-style: italic;
+    }
+
+    .article-content .eq {
+      margin: 22px 0;
+      overflow-x: auto;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .article-content .toc {
+      background: #f5f2ec;
+      padding: 22px 30px;
+      border-radius: 5px;
+      margin: 32px 0 48px;
+      border: none;
+    }
+
+    .article-content .toc-title {
+      font-weight: 700;
+      font-size: 0.86em;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 12px;
+      color: #9b2226;
+    }
+
+    .article-content .toc ol {
+      list-style: none;
+      counter-reset: toc;
+      padding-left: 0;
+    }
+
+    .article-content .toc li {
+      counter-increment: toc;
+      margin-bottom: 5px;
+      font-size: 0.96em;
+      color: #5c5347;
+    }
+
+    .article-content .toc li::before {
+      content: counter(toc) ". ";
+      color: #9b2226;
+      font-weight: 600;
+    }
+
+    .article-content .chain-diagram {
+      text-align: center;
+      margin: 32px 0;
+      padding: 20px 16px;
+      background: #f5f2ec;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 0.96em;
+      line-height: 1.9;
+    }
+
+    .article-content .refs {
+      margin-top: 60px;
+      padding-top: 22px;
+      border-top: 1.5px solid #d6cfc2;
+      font-size: 0.88em;
+      line-height: 1.65;
+      color: #5c5347;
+    }
+    .article-content .refs h2 { border-bottom: none; margin-top: 0; }
+    .article-content .refs p { margin-bottom: 8px; }
+    .article-content .refs .rk { font-weight: 600; color: #181410; }
+
+    .article-content em { font-style: italic; }
+    .article-content strong { font-weight: 600; }
+
+    .article-content .katex-display { margin: 14px 0 !important; }
+    .article-content .katex { font-size: 1.02em; }
+
+    @media (max-width: 600px) {
+      .article-content { font-size: 17px; }
+      .article-content h2 { font-size: 1.2em; }
+      .article-content .box,
+      .article-content .prf,
+      .article-content .example { padding: 16px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Reading Progress -->
+  <div class="reading-progress"></div>
+
+  <!-- ═══ Header ═══ -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="../index.html" class="site-logo">
+        <span class="logo-box">■</span>
+        Inside the AI Blackbox
+      </a>
+      <nav>
+        <ul class="site-nav">
+          <li><a href="../index.html">Posts</a></li>
+          <li><a href="../about.html">About</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ═══ Article ═══ -->
+  <article class="article-container">
+    <div class="article-header">
+      <a href="../index.html" class="article-back">← Back to all posts</a>
+      <h1>From Pigeonholes to Lottery Tickets</h1>
+      <p class="subtitle">A self-contained guide to the combinatorial argument at the heart of neural network pruning — from the pigeonhole principle through random subset sums to the 2025 proof that transformers contain strong lottery tickets.</p>
+      <div class="article-meta">
+        <span>April 2026</span>
+        <span>·</span>
+        <span>Combinatorics / Deep Learning</span>
+      </div>
+    </div>
+
+    <div class="article-content">
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li>The Pigeonhole Principle: A Refresher</li>
+    <li>The Setup: What Is a Subnetwork?</li>
+    <li>Counting: How Many Subnetworks Are There?</li>
+    <li>Covering: Can Random Weights Hit Any Target?</li>
+    <li>Matching: Can We Hit All Targets at Once?</li>
+    <li>From Weights to Functions: Closing the Gap</li>
+    <li>The Formal Proof (Malach et al., 2020)</li>
+    <li>The SubsetSum Breakthrough (Pensia et al., 2020)</li>
+    <li>The Lower Bound: You Can't Do Better</li>
+    <li>The Frontier: From MLPs to CNNs to Transformers (2022–2025)</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">1.</span> The Pigeonhole Principle: A Refresher</h2>
+
+<p>
+Every result in this article ultimately rests on one of the simplest ideas in mathematics: if you have more objects than containers, some container must hold more than one object. This is the <strong>pigeonhole principle</strong>. Despite its simplicity, it is one of the most powerful tools in combinatorics.
+</p>
+
+<div class="box defn">
+  <div class="box-title">The Pigeonhole Principle</div>
+  <p>
+  If \(n\) items are placed into \(m\) containers and \(n > m\), then at least one container holds at least two items.
+  </p>
+  <p>
+  More generally: if \(n\) items go into \(m\) containers, some container holds at least \(\lceil n/m \rceil\) items.
+  </p>
+</div>
+
+<p>
+A classic application: in any group of 367 people, at least two share a birthday. There are 366 possible birthdays (including Feb 29), so 367 people cannot all have distinct birthdays — some "birthday container" must hold two people.
+</p>
+
+<p>
+The version we need for neural networks is a <em>probabilistic</em> variant that goes in the other direction:
+</p>
+
+<blockquote>
+If you throw enough random darts at a target, you are guaranteed (with high probability) to hit every region of interest.
+</blockquote>
+
+<p>
+In our setting, the "darts" are the random weights of an overparameterized network, and the "regions of interest" are the weight values that a target network needs. The argument will show that a large enough random network inevitably contains — purely by chance — a subnetwork that closely matches any desired smaller network. The rest of this article makes this precise.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">2.</span> The Setup: What Is a Subnetwork?</h2>
+
+<p>
+A neural network \(f(x; \theta)\) is parameterized by a vector of weights \(\theta = (\theta_1, \theta_2, \ldots, \theta_D) \in \mathbb{R}^D\). A <strong>subnetwork</strong> is obtained by permanently setting some of these weights to zero:
+</p>
+
+<div class="box defn">
+  <div class="box-title">Definition — Subnetwork and mask</div>
+  <p>
+  A <strong>binary mask</strong> is a vector \(m \in \{0, 1\}^D\). The masked network is \(f(x;\, m \odot \theta)\), where \(\odot\) is elementwise multiplication:
+  </p>
+  <div class="eq">
+  $$(m \odot \theta)_i = \begin{cases} \theta_i & \text{if } m_i = 1 \quad (\text{weight kept}), \\ 0 & \text{if } m_i = 0 \quad (\text{weight pruned}). \end{cases}$$
+  </div>
+  <p>
+  The <strong>sparsity</strong> of the mask is \(s = 1 - \frac{\|m\|_0}{D}\), the fraction of weights removed. A mask with \(s = 0.9\) keeps 10% of the weights.
+  </p>
+</div>
+
+<p>
+Think of it this way: the full network is a circuit board with \(D\) wires. The mask is a set of wire cutters — it permanently severs some connections, leaving a simpler circuit. The central question is:
+</p>
+
+<blockquote>
+If the full network's weights are <em>random</em> (never trained), can the wire cutters alone produce a circuit that computes a desired function?
+</blockquote>
+
+<p>
+If yes — if cutting wires is as powerful as soldering new values onto them — that is the <em>strong lottery ticket hypothesis</em>. The combinatorial argument explains why the answer is yes, provided the network is large enough.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">3.</span> Counting: How Many Subnetworks Are There?</h2>
+
+<p>
+A mask \(m \in \{0, 1\}^D\) makes \(D\) independent binary choices: keep or prune each weight. The total number of possible masks is \(2^D\), and the number of masks with exactly \(k\) weights kept is the binomial coefficient:
+</p>
+
+<div class="eq">
+$$N(D, k) = \binom{D}{k} = \frac{D!}{k!(D-k)!}.$$
+</div>
+
+<p>
+To get a sense of this number's magnitude, we use the binary entropy approximation. Stirling's formula gives \(n! \approx \sqrt{2\pi n}\,(n/e)^n\). Substituting into the binomial coefficient and simplifying:
+</p>
+
+<div class="eq">
+$$\log_2 \binom{D}{k} \;\approx\; D \cdot H\!\left(\frac{k}{D}\right), \qquad H(p) = -p\log_2 p - (1-p)\log_2(1-p).$$
+</div>
+
+<p>
+Here \(H(p)\) is the <strong>binary entropy function</strong>. Let us unpack what it measures and why it appears.
+</p>
+
+<h3>What binary entropy measures</h3>
+
+<p>
+\(H(p)\) answers the question: "How many yes/no questions do I need to ask to identify which \(k = pD\) weights out of \(D\) were kept?" If \(p = 1/2\) (half the weights are kept), each weight is equally likely to be in or out, so you need one bit per weight: \(H(1/2) = 1\), and \(\binom{D}{D/2} \approx 2^D\). If \(p = 0.1\) (only 10% kept — i.e., 90% sparsity), most weights are "out" and the remaining ones are rare, so you need fewer bits to describe which ones: \(H(0.1) \approx 0.469\), and \(\binom{D}{D/10} \approx 2^{0.469\,D}\).
+</p>
+
+<div class="example">
+  <div class="box-title">Example — Concrete numbers</div>
+  <p>
+  <strong>Tiny network (\(D = 20\)):</strong> At 90% sparsity (keep 2 weights), there are \(\binom{20}{2} = 190\) subnetworks.
+  </p>
+  <p>
+  <strong>Small MNIST network (\(D = 300{,}000\)):</strong> At 90% sparsity, there are approximately \(2^{140{,}700}\) subnetworks — a number with ~42,000 digits.
+  </p>
+  <p>
+  <strong>ResNet-50 (\(D = 25{,}000{,}000\)):</strong> At 90% sparsity, roughly \(2^{11{,}700{,}000}\) subnetworks — a number with ~3.5 million digits. For comparison, the number of atoms in the observable universe is about \(10^{80} \approx 2^{266}\).
+  </p>
+  <p>
+  <strong>GPT-2 (\(D = 1{,}500{,}000{,}000\)):</strong> At 90% sparsity, roughly \(2^{703{,}000{,}000}\) — a number with ~212 million digits.
+  </p>
+</div>
+
+<p>
+The sheer number of subnetworks is almost incomprehensible. But counting is not enough. A telephone book has billions of entries, but they're all phone numbers — no subnetwork corresponds to a Shakespearean sonnet. The next two sections show that random weights provide enough <em>diversity</em> that this combinatorial abundance translates into functional richness.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">4.</span> Covering: Can Random Weights Hit Any Target?</h2>
+
+<p>
+We now ask the first key question: if we draw \(D\) random numbers, can we find one close to any specific target value?
+</p>
+
+<h3>The single-target problem</h3>
+
+<p>
+Suppose each weight \(\theta_i\) is drawn independently from a distribution with density \(\rho\) — for example, \(\mathrm{Uniform}([-1, 1])\), which has density \(\rho(t) = 1/2\) on \([-1,1]\). Fix a target value \(w^*\) (say, \(w^* = 0.73\)). We want to find some \(\theta_i\) close to \(w^*\).
+</p>
+
+<p>
+<strong>Step 1: Probability of one hit.</strong> The probability that a single random weight \(\theta_i\) lands within \(\varepsilon\) of \(w^*\) is:
+</p>
+
+<div class="eq">
+$$p_\varepsilon = \Pr\bigl[|\theta_i - w^*| \le \varepsilon\bigr] = \int_{w^* - \varepsilon}^{w^* + \varepsilon} \rho(t)\,dt.$$
+</div>
+
+<p>
+When \(\varepsilon\) is small, this integral is approximately the density at the target times the interval length:
+</p>
+
+<div class="eq">
+$$p_\varepsilon \approx 2\varepsilon \cdot \rho(w^*).$$
+</div>
+
+<p>
+For the uniform distribution on \([-1,1]\): \(\rho(w^*) = 1/2\), so \(p_\varepsilon = \varepsilon\). For a Gaussian \(\mathcal{N}(0, \sigma^2)\): \(p_\varepsilon \approx \frac{2\varepsilon}{\sigma\sqrt{2\pi}}\, e^{-{w^*}^2/(2\sigma^2)}\).
+</p>
+
+<p>
+<strong>Step 2: Probability of no hit among \(D\) draws.</strong> Each weight is independent, so:
+</p>
+
+<div class="eq">
+$$\Pr[\text{no } \theta_i \text{ near } w^*] = (1 - p_\varepsilon)^D.$$
+</div>
+
+<p>
+<strong>Step 3: At least one hit.</strong> Taking the complement:
+</p>
+
+<div class="eq">
+$$\Pr[\exists\, i : |\theta_i - w^*| \le \varepsilon] = 1 - (1-p_\varepsilon)^D.$$
+</div>
+
+<p>
+Using the standard approximation \((1-p)^D \approx e^{-pD}\) (valid when \(p\) is small):
+</p>
+
+<div class="eq">
+$$\Pr[\text{at least one hit}] \approx 1 - e^{-D \cdot p_\varepsilon}.$$
+</div>
+
+<p>
+When \(D \cdot p_\varepsilon \gg 1\), this probability is overwhelmingly close to 1. In fact, the <em>expected number of hits</em> is \(\mu = D \cdot p_\varepsilon\), and by the law of large numbers, the actual number concentrates tightly around \(\mu\).
+</p>
+
+<div class="example">
+  <div class="box-title">Example — How many random weights land near 0.73?</div>
+  <p>
+  Take \(D = 25{,}000{,}000\) weights from \(\mathrm{Uniform}([-1,1])\), and set \(\varepsilon = 0.001\) (we want a match to three decimal places). Then \(p_\varepsilon = 0.001\), and:
+  </p>
+  <div class="eq">
+  $$\mu = D \cdot p_\varepsilon = 25{,}000{,}000 \times 0.001 = 25{,}000.$$
+  </div>
+  <p>
+  There are about <strong>25,000</strong> random weights within 0.001 of our target value 0.73. Even with \(\varepsilon = 10^{-6}\) (six decimal places), we still expect 25 matches. The random pool is extraordinarily dense in any region of the weight space.
+  </p>
+</div>
+
+<p>
+So far, so good: for any single target value, a large random pool almost certainly contains a close match. But a target network has many weights, and we need to match <em>all of them at once</em>.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">5.</span> Matching: Can We Hit All Targets at Once?</h2>
+
+<p>
+This is the crux of the argument and the place where the pigeonhole principle transforms from a curiosity into a theorem.
+</p>
+
+<h3>The problem: simultaneous matching without reuse</h3>
+
+<p>
+Suppose the target network has \(k\) weights with values \(w_1^*, w_2^*, \ldots, w_k^*\). We need to find \(k\) <em>distinct</em> random weights \(\theta_{\pi(1)}, \theta_{\pi(2)}, \ldots, \theta_{\pi(k)}\) such that \(|\theta_{\pi(j)} - w_j^*| \le \varepsilon\) for every \(j\). No random weight can serve double duty — each can match at most one target.
+</p>
+
+<p>
+This is harder than the single-target problem. Why? Consider an adversarial scenario: suppose all \(k\) target values are identical, say \(w_1^* = w_2^* = \cdots = w_k^* = 0.5\). Then we need \(k\) distinct random weights near 0.5. If the region \([0.5 - \varepsilon, 0.5 + \varepsilon]\) contains fewer than \(k\) random weights, we fail.
+</p>
+
+<p>
+The expected number of random weights in any interval of length \(2\varepsilon\) is \(D \cdot p_\varepsilon\). As long as \(D \cdot p_\varepsilon \gg k\), even this worst case is fine. But we need to prove this rigorously for <em>every possible</em> configuration of target values, not just the worst case.
+</p>
+
+<h3>Hall's marriage theorem: the right tool</h3>
+
+<p>
+The problem is a <em>bipartite matching</em>: we have two sets (target weights and random weights) and we need a one-to-one assignment. The classical tool for this is Hall's marriage theorem.
+</p>
+
+<div class="box defn">
+  <div class="box-title">Hall's Marriage Theorem (1935)</div>
+  <p>
+  Consider a bipartite graph with left vertices \(L = \{1, \ldots, k\}\) and right vertices \(R = \{1, \ldots, D\}\). Left vertex \(j\) is connected to right vertex \(i\) if \(|\theta_i - w_j^*| \le \varepsilon\) — i.e., random weight \(\theta_i\) is a valid match for target \(w_j^*\). Define the <strong>neighborhood</strong> of a set \(S \subseteq L\) as:
+  </p>
+  <div class="eq">
+  $$N(S) = \bigl\{i \in R : |\theta_i - w_j^*| \le \varepsilon \text{ for some } j \in S\bigr\}.$$
+  </div>
+  <p>
+  A perfect matching for \(L\) (an assignment \(\pi : L \to R\) that is injective and satisfies \(\pi(j) \in N(\{j\})\) for all \(j\)) exists if and only if <strong>Hall's condition</strong> holds:
+  </p>
+  <div class="eq">
+  $$|N(S)| \ge |S| \quad \text{for every } S \subseteq L.$$
+  </div>
+  <p>
+  In words: every group of target values, no matter how you choose them, collectively has at least as many candidate matches as the group's size.
+  </p>
+</div>
+
+<p>
+Let us build intuition for why Hall's condition holds in our random setting.
+</p>
+
+<h3>Why Hall's condition holds: three regimes</h3>
+
+<p>
+<strong>Small subsets (\(|S| = 1, 2, \ldots\) up to a few dozen):</strong> Each target value has about \(\mu = D \cdot p_\varepsilon\) candidate matches. Even if two target values are so close that their candidate sets overlap completely, the neighborhood \(N(S)\) has at least \(\mu\) elements — and we need \(|S| \ll \mu\). For example, with \(\mu = 25{,}000\) and \(|S| = 100\), we have \(|N(S)| \ge 25{,}000 \gg 100\).
+</p>
+
+<p>
+<strong>Medium subsets (\(|S|\) up to a few thousand):</strong> Now some target values may cluster in the same region of \([-1,1]\). The neighborhood \(N(S)\) is the set of random weights within \(\varepsilon\) of the convex hull of the targets in \(S\). Even if all targets in \(S\) cluster in a small interval of length \(\ell\), the neighborhood spans an interval of length \(\ell + 2\varepsilon\), which contains about \(D \cdot (\ell + 2\varepsilon) / 2\) random weights. Since \(|S|\) targets in an interval of length \(\ell\) are spaced at most \(\ell/|S|\) apart, and we have \(D \cdot \varepsilon \gg k \ge |S|\), the neighborhood is always big enough.
+</p>
+
+<p>
+<strong>Large subsets (\(|S|\) approaching \(k\)):</strong> When \(|S| = k\) (the full set), we need \(|N(\{1,\ldots,k\})| \ge k\). The full neighborhood is the union of all candidate sets. Even in the worst case where all \(k\) targets lie in a single interval, that interval contains about \(D \cdot p_\varepsilon\) random weights, and we assumed \(D \cdot p_\varepsilon \gg k\). So the condition holds.
+</p>
+
+<div class="prf">
+  <div class="box-title">Proof — Hall's condition holds with high probability</div>
+  <p>
+  We prove that \(|N(S)| \ge |S|\) for all \(S \subseteq \{1,\ldots,k\}\), simultaneously, with probability at least \(1 - \delta\).
+  </p>
+  <p>
+  <strong>Setup.</strong> The \(D\) random weights are i.i.d. from a distribution with density \(\rho \ge \rho_{\min} > 0\) on the interval \([-W, W]\) containing all target values. For any subset \(S\) of target values, let \(I(S)\) be the smallest interval containing all values in \(S\), and let \(\overline{I}(S)\) be the \(\varepsilon\)-fattening of \(I(S)\) (expanded by \(\varepsilon\) on each side). Then \(N(S) \supseteq \{i : \theta_i \in \overline{I}(S)\}\).
+  </p>
+  <p>
+  <strong>Expected neighborhood size.</strong> The interval \(\overline{I}(S)\) has length at least \(2\varepsilon\) (even if all targets coincide), so:
+  </p>
+  <div class="eq">
+  $$\mathbb{E}[|N(S)|] \ge D \cdot |\overline{I}(S)| \cdot \rho_{\min} \ge D \cdot 2\varepsilon \cdot \rho_{\min} = 2D\varepsilon\rho_{\min}.$$
+  </div>
+  <p>
+  <strong>Concentration.</strong> By a Chernoff bound, for any fixed \(S\):
+  </p>
+  <div class="eq">
+  $$\Pr\bigl[|N(S)| < \tfrac{1}{2}\mathbb{E}[|N(S)|]\bigr] \le e^{-\mathbb{E}[|N(S)|]/8}.$$
+  </div>
+  <p>
+  We need \(\frac{1}{2}\mathbb{E}[|N(S)|] \ge |S|\), i.e., \(\mathbb{E}[|N(S)|] \ge 2k\). This holds when \(D\varepsilon\rho_{\min} \ge k\), i.e., \(D \ge k / (\varepsilon \rho_{\min})\).
+  </p>
+  <p>
+  <strong>Union bound.</strong> There are \(2^k\) subsets of \(\{1,\ldots,k\}\). By the union bound:
+  </p>
+  <div class="eq">
+  $$\Pr[\exists\, S : |N(S)| < |S|] \le 2^k \cdot e^{-D\varepsilon\rho_{\min}/4}.$$
+  </div>
+  <p>
+  For this to be at most \(\delta\), we need \(D\varepsilon\rho_{\min}/4 \ge k \ln 2 + \ln(1/\delta)\), which is satisfied when \(D = O(k/(\varepsilon\rho_{\min}) \cdot \log(1/\delta))\). Under this condition, Hall's condition holds with probability at least \(1 - \delta\), and the perfect matching exists.
+  </p>
+  <p class="qed">∎</p>
+</div>
+
+<div class="box rmk">
+  <div class="box-title">Remark — The \(2^k\) union bound looks expensive</div>
+  <p>
+  The union bound over all \(2^k\) subsets seems to require \(D\) to be exponentially large in \(k\). But the Chernoff bound gives an exponentially small failure probability per subset, so the two exponentials cancel: \(2^k \cdot e^{-cD\varepsilon} \le \delta\) when \(D\varepsilon \ge (k \ln 2 + \ln(1/\delta))/c\). The required \(D\) is only <em>linear</em> in \(k\) (and logarithmic in \(1/\delta\)). This is the magic of concentration inequalities: they tame the combinatorial explosion.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">6.</span> From Weights to Functions: Closing the Gap</h2>
+
+<p>
+Sections 4–5 show that we can find a subset of random weights that <em>numerically</em> match the target's weight values. But this does not immediately imply that the subnetwork computes the same <em>function</em> as the target.
+</p>
+
+<h3>The structural mismatch problem</h3>
+
+<p>
+In a real neural network, each weight lives at a specific location in the computational graph: it connects a specific pair of neurons. Weight \(\theta_{17}\) might connect neuron 3 in layer 1 to neuron 5 in layer 2. Even if \(\theta_{17} \approx w^*_4\) numerically, it is in the <em>wrong position</em> to play the role of the fourth weight in the target network.
+</p>
+
+<p>
+This means we cannot simply find random weights with the right values and declare victory. We need a construction that uses the network's topology — its layer structure, connectivity, and activation functions — to show that pruning can "rearrange" the computation to match the target.
+</p>
+
+<h3>The key idea: masking as rewiring</h3>
+
+<p>
+The crucial insight, which enables the formal proofs, is that <strong>setting weights to zero in a fully connected network is equivalent to disconnecting connections</strong>. In a fully connected layer, every input neuron connects to every output neuron. By zeroing out all but one input connection to a given neuron, we effectively rewire that neuron to depend on a single input — turning a general-purpose neuron into a specialist.
+</p>
+
+<p>
+For ReLU networks, this leads to the fundamental identity that powers all the proofs:
+</p>
+
+<div class="box lem">
+  <div class="box-title">Lemma — ReLU decomposition identity</div>
+  <p>
+  For any real number \(a\):
+  </p>
+  <div class="eq">
+  $$a = \sigma(a) - \sigma(-a), \quad \text{where } \sigma(x) = \max(0, x).$$
+  </div>
+  <p>
+  Consequently, a neuron computing \(\sigma\bigl(\sum_{i=1}^d w_i^* x_i\bigr)\) can be rewritten as:
+  </p>
+  <div class="eq">
+  $$\sigma\!\left(\sum_{i=1}^d w_i^* x_i\right) = \sigma\!\left(\sum_{i=1}^d \bigl[\sigma(w_i^* x_i) - \sigma(-w_i^* x_i)\bigr]\right).$$
+  </div>
+  <p>
+  This decomposes one \(d\)-dimensional neuron into a two-layer network of \(2d\) scalar neurons, each depending on a single input coordinate.
+  </p>
+</div>
+
+<p>
+Why does this help? Because a scalar neuron \(x_i \mapsto \sigma(\alpha x_i)\) depends on a single weight \(\alpha\). To approximate it by pruning, we take a random neuron with weight vector \(W_j \in \mathbb{R}^d\), zero out every component except the \(i\)-th, and obtain \(x \mapsto \sigma(W_{j,i} x_i)\). If \(W_{j,i} \approx \alpha\), we have our match.
+</p>
+
+<p>
+This is where the combinatorial argument from Sections 4–5 plugs in: we need \(W_{j,i} \approx w_i^*\) for a suitable neuron \(j\), and we need to find such a \(j\) for every coordinate \(i\) simultaneously. The counting shows that a wide enough random layer contains enough candidates.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">7.</span> The Formal Proof (Malach et al., 2020)</h2>
+
+<p>
+We now assemble the pieces into the first rigorous proof of the strong lottery ticket hypothesis.
+</p>
+
+<div class="box thm">
+  <div class="box-title">Theorem 1 (Malach, Yehudai, Shalev-Shwartz &amp; Shamir, 2020)</div>
+  <p>
+  Let \(f^*\) be a target ReLU network of depth \(l\) and width \(n\), with weights satisfying \(\|W^{(i)}\|_2 \le 1\) and \(\|W^{(i)}\|_{\max} \le 1/\sqrt{n_{\mathrm{in}}}\). Let \(G\) be a random ReLU network of depth \(2l\) and width
+  </p>
+  <div class="eq">
+  $$m = \mathrm{poly}(d, n, l, 1/\varepsilon, \log(1/\delta)),$$
+  </div>
+  <p>
+  with weights i.i.d. from \(\mathrm{Uniform}([-1,1])\). Then with probability \(\ge 1 - \delta\), there exists a weight-subnetwork \(\widetilde{G}\) such that \(\sup_{x:\|x\|\le 1} |\widetilde{G}(x) - f^*(x)| \le \varepsilon\), with \(O(dn + n^2 l)\) active weights.
+  </p>
+</div>
+
+<div class="prf">
+  <div class="box-title">Proof — Full construction for target depth 1 (single hidden layer)</div>
+  <p>
+  We prove the case \(l = 1\): the target is \(f^*(x) = \sum_{j=1}^n v_j^* \,\sigma(\langle w_j^*, x\rangle)\). The random network \(G\) has depth 2 (or 3 for the output layer) and width \(m\).
+  </p>
+  <p>
+  <strong>Phase 1: Decompose each target neuron.</strong> By the ReLU identity, each neuron becomes:
+  </p>
+  <div class="eq">
+  $$\sigma(\langle w_j^*, x\rangle) = \sigma\!\left(\sum_{i=1}^d \bigl[\sigma(w_{j,i}^* x_i) - \sigma(-w_{j,i}^* x_i)\bigr]\right).$$
+  </div>
+  <p>
+  Target neuron \(j\) is replaced by \(2d\) scalar sub-neurons, each needing a single scalar weight.
+  </p>
+
+  <p>
+  <strong>Phase 2: Match each scalar weight.</strong> The random network has \(m\) neurons in its first layer, each with a random weight vector \(W_r \in \mathbb{R}^d\) and a random output weight \(u_r \in [-1,1]\). For target neuron \(j\), coordinate \(i\), we need to find two neurons \(r_1, r_2\) such that:
+  </p>
+  <div class="eq">
+  $$|u_{r_1}| \cdot W_{r_1, i} \approx w_{j,i}^* \quad \text{(positive sign)}, \qquad |u_{r_2}| \cdot W_{r_2, i} \approx -w_{j,i}^* \quad \text{(negative sign)},$$
+  </div>
+  <p>
+  and we mask neuron \(r_1\) to retain only its \(i\)-th input weight (setting all other inputs to zero).
+  </p>
+  <p>
+  The product \(|u_r| \cdot W_{r,i}\) has a known distribution (a product of uniforms), and the probability that it falls within \(\varepsilon/(2dn)\) of any target value \(\alpha \in [-1/\sqrt{d}, 1/\sqrt{d}]\) is at least:
+  </p>
+  <div class="eq">
+  $$p \ge \Omega\!\left(\frac{\varepsilon}{dn}\right).$$
+  </div>
+
+  <p>
+  <strong>Phase 3: Apply the covering argument.</strong> For each of the \(n \cdot d\) scalar weights to match, and each needing two random neurons (positive and negative), we need \(2nd\) successful matches from \(m\) neurons. Each neuron is a valid match with probability \(p\), so the expected number of matches is \(m \cdot p\). By a Chernoff bound, all \(2nd\) matches succeed simultaneously with probability \(\ge 1 - \delta\) when:
+  </p>
+  <div class="eq">
+  $$m \ge O\!\left(\frac{dn}{\varepsilon} \cdot \log\frac{dn}{\delta}\right) = \mathrm{poly}(d, n, 1/\varepsilon, \log(1/\delta)).$$
+  </div>
+
+  <p>
+  <strong>Phase 4: Assemble the subnetwork.</strong> The pruning mask is:
+  </p>
+  <p>
+  (a) For each matched pair \((r_1, r_2)\) at coordinate \(i\): zero out all entries of \(W_{r_1}\) and \(W_{r_2}\) except the \(i\)-th, and keep the output weights \(u_{r_1}, u_{r_2}\).
+  </p>
+  <p>
+  (b) Zero out all unmatched neurons entirely.
+  </p>
+  <p>
+  The resulting subnetwork uses \(2nd\) scalar first-layer weights and \(n\) effective output weights, giving \(O(dn)\) active parameters — the same order as the target network.
+  </p>
+
+  <p>
+  <strong>Phase 5: Bound the approximation error.</strong> Each scalar sub-neuron is approximated to error \(\varepsilon/(2dn)\). A single target neuron sums \(2d\) sub-neurons, so its error is at most \(2d \cdot \varepsilon/(2dn) = \varepsilon/n\). The full network sums \(n\) target neurons with bounded output weights (\(|v_j^*| \le 1\)), so the total error is at most \(n \cdot \varepsilon/n = \varepsilon\).
+  </p>
+  <p class="qed">∎</p>
+</div>
+
+<h3>Extension to deeper networks</h3>
+
+<p>
+For a target of depth \(l\), the construction applies the single-layer approximation \(l\) times. Each target layer requires two random layers (one to perform coordinate masking, one to reassemble), hence the random network needs depth \(2l\). Errors compound multiplicatively across layers, requiring per-layer precision \(\varepsilon / (l \cdot L_{\mathrm{lip}})\), where \(L_{\mathrm{lip}}\) is the Lipschitz constant per layer. This increases the required width by a polynomial factor in \(l\).
+</p>
+
+<div class="box rmk">
+  <div class="box-title">Remark — The polynomial overhead</div>
+  <p>
+  Malach et al.'s original bound requires the random network to be \(\widetilde{O}(d^4 l^2)\) times wider than the target. This is a polynomial factor — nontrivial (it proves the hypothesis!), but far from what experiments show (a factor of ~2× suffices in practice). The next section shows how this was dramatically improved.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">8.</span> The SubsetSum Breakthrough (Pensia et al., 2020)</h2>
+
+<p>
+The breakthrough that reduced the overparameterization from polynomial to logarithmic came from connecting neural network pruning to a classical problem in combinatorics: the <em>random subset sum problem</em>.
+</p>
+
+<h3>The random subset sum problem</h3>
+
+<div class="box defn">
+  <div class="box-title">Definition — Random SubsetSum</div>
+  <p>
+  Given \(n\) numbers \(a_1, \ldots, a_n\) drawn i.i.d. from \(\mathrm{Uniform}([0,1])\) and a target \(t \in [0,1]\), find a subset \(S \subseteq \{1, \ldots, n\}\) such that \(\bigl|\sum_{i \in S} a_i - t\bigr| \le \varepsilon\).
+  </p>
+</div>
+
+<p>
+How many random numbers do you need? Naively, you might think \(O(1/\varepsilon)\) — to cover \([0,1]\) with resolution \(\varepsilon\), you need \(1/\varepsilon\) grid points. But subsets give you <em>exponentially many</em> sums from linearly many numbers. With \(n\) numbers, there are \(2^n\) possible subsets, producing \(2^n\) different sums. If these sums are spread roughly uniformly across an interval, the spacing between consecutive sums is about \(\text{interval length} / 2^n\), which is exponentially small.
+</p>
+
+<p>
+This was made precise by a classical result:
+</p>
+
+<div class="box lem">
+  <div class="box-title">Lemma (Lueker, 1998)</div>
+  <p>
+  Let \(a_1, \ldots, a_n \sim \mathrm{Uniform}([0,1])\) i.i.d. For any target \(t \in [\varepsilon, n - \varepsilon]\), if \(n \ge C \log(1/\varepsilon)\) for a universal constant \(C\), then with probability at least \(1 - e^{-\Omega(n)}\), there exists a subset \(S\) with \(\bigl|\sum_{i \in S} a_i - t\bigr| \le \varepsilon\).
+  </p>
+</div>
+
+<p>
+The stunning conclusion: only \(O(\log(1/\varepsilon))\) random numbers are needed — not \(O(1/\varepsilon)\) or worse. Doubling \(n\) <em>squares</em> the precision.
+</p>
+
+<h3>The connection to pruning</h3>
+
+<p>
+Pensia et al.'s insight: each weight in the target network is a "target \(t\)," and the random weights in the overparameterized network are the "random numbers \(a_i\)." Pruning a subset of random weights and summing the survivors is exactly the subset sum operation.
+</p>
+
+<p>
+More precisely, consider approximating a single target weight \(w^*\) using the random weights in one neuron's input vector. By decomposing \(w^*\) into its sign and magnitude and rescaling, we reduce to: "find a subset of \(n\) random numbers in \([0,1]\) that sums to approximately \(|w^*|/C\)." Lueker's lemma says \(n = O(\log(1/\varepsilon))\) suffices.
+</p>
+
+<div class="box thm">
+  <div class="box-title">Theorem 2 (Pensia, Rajput, Nagle, Vishwakarma &amp; Papailiopoulos, 2020)</div>
+  <p>
+  Any target ReLU network of width \(d\) and depth \(l\) can be \(\varepsilon\)-approximated by pruning a random network that is a factor \(O(\log(dl/\varepsilon\delta))\) wider and twice as deep, with probability at least \(1 - \delta\).
+  </p>
+</div>
+
+<div class="prf">
+  <div class="box-title">Proof sketch</div>
+  <p>
+  <strong>Step 1 (Per-weight approximation).</strong> Each target weight \(w^*_{j,i}\) must be approximated by a subset sum of random weights. By Lueker's lemma, \(n = O(\log(1/\varepsilon'))\) random values per weight suffice, where \(\varepsilon' = \varepsilon / (d \cdot l)\) is the per-weight precision.
+  </p>
+  <p>
+  <strong>Step 2 (Architecture).</strong> The random network has \(n\) "copies" of each neuron position, with independent random weights. For each target weight, the SubsetSum is solved across these copies. The pruning mask selects which copies contribute.
+  </p>
+  <p>
+  <strong>Step 3 (Union bound).</strong> The target network has at most \(O(d^2 l)\) weights. By Lueker's lemma, each is matched with failure probability \(e^{-\Omega(n)}\). A union bound over all weights:
+  </p>
+  <div class="eq">
+  $$O(d^2 l) \cdot e^{-\Omega(n)} \le \delta \quad \Longleftarrow \quad n = O\!\left(\log\frac{d^2 l}{\delta}\right).$$
+  </div>
+  <p>
+  So the random network needs width \(d \cdot n = O\bigl(d \log(dl/\varepsilon\delta)\bigr)\) — a logarithmic factor wider than the target.
+  </p>
+  <p class="qed">∎</p>
+</div>
+
+<p>
+This is an <em>exponential improvement</em> over Malach et al.'s polynomial bound. For a target of width 1000 and depth 10, Malach et al. require width ~\(10^{16}\), while Pensia et al. require width ~\(14{,}000\). The practical experiments by Ramanujan et al. (2020) show that width ~\(2{,}000\) suffices — much closer to the logarithmic bound.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">9.</span> The Lower Bound: You Can't Do Better</h2>
+
+<p>
+Is logarithmic overparameterization necessary, or could an even cleverer argument reduce it further?
+</p>
+
+<div class="box thm">
+  <div class="box-title">Theorem 3 — Lower bound (Pensia et al., 2020)</div>
+  <p>
+  There exists a two-layer target network of width \(d\) such that no random network of the same depth can yield an \(\varepsilon\)-approximating subnetwork with constant probability unless its width is at least:
+  </p>
+  <div class="eq">
+  $$m = \Omega\!\left(\frac{d}{\log^2 d} \cdot \log\frac{1}{\varepsilon}\right).$$
+  </div>
+</div>
+
+<div class="prf">
+  <div class="box-title">Proof idea — Information-theoretic argument</div>
+  <p>
+  The pruning mask \(m\) is a binary vector. If the random network has \(M\) total weights, a mask keeping \(k\) of them encodes at most \(\log_2 \binom{M}{k}\) bits of information.
+  </p>
+  <p>
+  The target network has \(\Theta(d^2)\) weights, each requiring \(\log_2(1/\varepsilon)\) bits of precision to specify. So the target requires at least \(\Omega(d^2 \log(1/\varepsilon))\) bits of information.
+  </p>
+  <p>
+  Equating: \(\log_2 \binom{M}{k} \ge \Omega(d^2 \log(1/\varepsilon))\). Using the entropy bound \(\log_2 \binom{M}{k} \le M\), we get \(M \ge \Omega(d^2 \log(1/\varepsilon))\). Since the network has width \(m\) and dimension \(d\), we have \(M = \Theta(m \cdot d)\), giving \(m \ge \Omega(d \log(1/\varepsilon))\) — matching the upper bound up to lower-order log factors.
+  </p>
+  <p class="qed">∎</p>
+</div>
+
+<p>
+The upper and lower bounds meet: the overparameterization factor for the strong lottery ticket hypothesis is \(\Theta(\log(1/\varepsilon))\) in width. This is a rare case in deep learning theory where a problem is resolved with tight bounds.
+</p>
+
+<div class="chain-diagram">
+\(\underbrace{\text{Malach et al.}}_{\text{poly}(d, 1/\varepsilon)} \;\;\xrightarrow{\text{SubsetSum}}\;\; \underbrace{\text{Pensia et al.}}_{\text{O}(\log(d/\varepsilon))} \;\;\xleftarrow{\text{matches}}\;\; \underbrace{\text{Lower bound}}_{\Omega(\log(1/\varepsilon))}\)
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2><span class="sn">10.</span> The Frontier: From MLPs to CNNs to Transformers (2022–2025)</h2>
+
+<p>
+The results of Sections 7–9 apply to fully connected (MLP) networks. But modern architectures are convolutional (CNNs) or attention-based (transformers). Extending the SLTH to these architectures is harder because the combinatorial structure of convolution and attention is fundamentally different from matrix multiplication.
+</p>
+
+<h3>Phase 1: Convolutional networks (da Cunha, Natale &amp; Viennot, 2022)</h3>
+
+<p>
+In a convolutional layer, the same small kernel is applied at every spatial position. This <em>weight sharing</em> means that pruning a single kernel weight affects the computation at every position simultaneously — unlike fully connected layers, where each weight is independent.
+</p>
+
+<div class="box thm">
+  <div class="box-title">Theorem 4 (da Cunha, Natale &amp; Viennot, 2022)</div>
+  <p>
+  Any target CNN can be \(\varepsilon\)-approximated by pruning a random CNN that is a factor \(O(\log(dl/\varepsilon))\) wider (in number of channels) and twice as deep, with high probability. The construction handles weight sharing by decomposing convolutions into pointwise operations and using the SubsetSum machinery per spatial position.
+  </p>
+</div>
+
+<p>
+The key challenge was that the ReLU decomposition identity — which separates coordinates in fully connected layers — cannot be applied directly when a convolution's output at one position depends on multiple input positions. Da Cunha et al. resolved this by assuming non-negative inputs (which is satisfied after any ReLU layer except possibly the first) and developing a convolution-specific version of the coordinate masking trick.
+</p>
+
+<h3>Phase 2: General equivariant networks (Ferbach et al., 2023)</h3>
+
+<p>
+Ferbach, Tsirigotis, Gidel, and Bose (2023) unified the MLP and CNN results into a single framework for <em>equivariant</em> networks — networks whose structure respects a symmetry group \(G\). Convolutional networks are a special case (equivariant under translation). Their framework shows that the SLTH holds for any architecture built from layers that are equivariant under a finite group, with logarithmic overparameterization.
+</p>
+
+<h3>Phase 3: Multi-head attention and transformers (Otsuka et al., 2025)</h3>
+
+<p>
+The most recent and arguably most significant extension brings the SLTH to the architecture that dominates modern AI: the <em>transformer</em>.
+</p>
+
+<p>
+The challenge is the attention mechanism. A single-head attention layer computes:
+</p>
+
+<div class="eq">
+$$\mathrm{Attn}(X) = \mathrm{softmax}\!\left(\frac{X W_Q (X W_K)^\top}{\sqrt{d_k}}\right) X W_V,$$
+</div>
+
+<p>
+where \(W_Q, W_K, W_V\) are the query, key, and value weight matrices. This is qualitatively different from ReLU layers in two ways: (a) the softmax function is not piecewise linear, so the ReLU decomposition does not apply, and (b) the attention weights depend on the <em>input itself</em> (through \(X W_Q\) and \(X W_K\)), creating a data-dependent nonlinearity.
+</p>
+
+<div class="box thm">
+  <div class="box-title">Theorem 5 (Otsuka, Chijiwa, García-Arias, Okoshi, Kawamura, Chu, Fujiki, Takeuchi &amp; Motomura, 2025)</div>
+  <p>
+  Let \(\mathrm{MHA}^*\) be a target multi-head attention mechanism with \(H\) heads, input dimension \(d\), and per-head key/value dimension \(d_k\). A randomly initialized MHA with the same number of heads and input dimension, but with per-head hidden dimension:
+  </p>
+  <div class="eq">
+  $$n_K = O\!\left(d \log\!\left(\frac{H d^{3/2}}{\varepsilon}\right)\right),$$
+  </div>
+  <p>
+  contains a weight-subnetwork (a strong lottery ticket) that \(\varepsilon\)-approximates \(\mathrm{MHA}^*\) uniformly over bounded input sequences, with high probability.
+  </p>
+  <p>
+  Furthermore, a randomly initialized transformer (without normalization layers) that is logarithmically wider and twice as deep as a target transformer contains a strong lottery ticket approximating the target.
+  </p>
+</div>
+
+<div class="prf">
+  <div class="box-title">Proof structure</div>
+  <p>
+  The proof overcomes the softmax barrier through two key ideas:
+  </p>
+  <p>
+  <strong>1. Matrix approximation via SubsetSum.</strong> The query, key, and value matrices \(W_Q, W_K, W_V\) are approximated entry-by-entry using the Pensia et al. SubsetSum framework. The random MHA has wider key/value dimensions (\(n_K\) instead of \(d_k\)), providing the pool of random weights. By Lueker's lemma, \(n_K = O(d_k \log(d/\varepsilon))\) suffices to match every entry.
+  </p>
+  <p>
+  <strong>2. Softmax Lipschitz control.</strong> The softmax function is not globally Lipschitz, but it is Lipschitz on bounded domains: for inputs bounded by \(B\), the Lipschitz constant of softmax is \(O(B)\). The authors show that the attention logits \(\frac{X W_Q (X W_K)^\top}{\sqrt{d_k}}\) are bounded when the input \(X\) and the weight matrices are bounded, and the perturbation from approximating \(W_Q\) and \(W_K\) propagates through softmax with a controlled error.
+  </p>
+  <p>
+  Specifically, if \(\|\widetilde{W}_Q - W_Q^*\|_F \le \varepsilon'\) and \(\|\widetilde{W}_K - W_K^*\|_F \le \varepsilon'\), then:
+  </p>
+  <div class="eq">
+  $$\bigl\|\mathrm{softmax}(\widetilde{A}) - \mathrm{softmax}(A^*)\bigr\|_F \le L_{\mathrm{sm}} \cdot \varepsilon',$$
+  </div>
+  <p>
+  where \(L_{\mathrm{sm}}\) depends on the input norm bound but not on the sequence length. This allows the per-matrix precision \(\varepsilon'\) to be set so that the final attention output error is at most \(\varepsilon\).
+  </p>
+  <p>
+  For full transformers, the construction handles the MLP blocks (standard ReLU layers) using the existing MLP theory and composes MHA + MLP blocks across the depth of the transformer. Each block doubles the depth (as in the MLP case), and errors accumulate linearly across blocks.
+  </p>
+  <p class="qed">∎</p>
+</div>
+
+<h3>The full picture</h3>
+
+<p>
+The combinatorial argument that began with the pigeonhole principle now extends across the entire landscape of modern neural architectures:
+</p>
+
+<div class="chain-diagram">
+<strong>The Strong Lottery Ticket Hypothesis — Proved Architectures</strong><br><br>
+\(\underbrace{\text{MLPs}}_{\substack{\text{Malach et al. 2020} \\ \text{Pensia et al. 2020} \\ \text{Orseau et al. 2020}}} \;\longrightarrow\; \underbrace{\text{CNNs}}_{\substack{\text{da Cunha et al.} \\ \text{2022}}} \;\longrightarrow\; \underbrace{\text{Equivariant}}_{\substack{\text{Ferbach et al.} \\ \text{2023}}} \;\longrightarrow\; \underbrace{\text{Transformers}}_{\substack{\text{Otsuka et al.} \\ \text{2025}}}\)
+<br><br>
+All with <strong>logarithmic</strong> overparameterization — matching the information-theoretic lower bound.
+</div>
+
+<div class="box rmk">
+  <div class="box-title">Remark — What remains open</div>
+  <p>
+  <strong>Normalization layers.</strong> The transformer result (Theorem 5) applies to transformers <em>without</em> LayerNorm or RMSNorm. These normalization layers introduce input-dependent scaling that breaks the current proof technique. Extending the SLTH to normalized transformers is the main open problem.
+  </p>
+  <p>
+  <strong>Finding vs. existing.</strong> All theorems prove <em>existence</em> of strong lottery tickets. The mask construction requires solving SubsetSum instances (NP-hard in general, though random instances are tractable). Whether there exist polynomial-time algorithms that find near-optimal masks in practice — and whether IMP, edge-popup, or other heuristics provably find them — remains unresolved.
+  </p>
+  <p>
+  <strong>The constant factor gap.</strong> Theory requires ~\(O(\log d)\) overparameterization. Practice often achieves the result with a factor of 2×. Understanding this gap — whether practical networks have additional structure that makes the task easier, or whether the logarithmic bound hides large constants — is an active area of research.
+  </p>
+</div>
+
+<p>
+The story of the strong lottery ticket hypothesis is, at its core, a story about the unreasonable power of combinatorics. A random neural network, by virtue of having many parameters, contains within it an astronomically large library of subnetworks. The pigeonhole principle — perhaps the simplest idea in all of mathematics — guarantees that this library is rich enough to contain a close copy of any book you might want to read. The only hard part is finding it.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="refs">
+  <h2>References</h2>
+
+  <p><span class="rk">[Malach et al., 2020]</span> E. Malach, G. Yehudai, S. Shalev-Shwartz, O. Shamir. <em>Proving the lottery ticket hypothesis: pruning is all you need.</em> ICML 2020.</p>
+
+  <p><span class="rk">[Pensia et al., 2020]</span> A. Pensia, S. Rajput, A. Nagle, H. Vishwakarma, D. Papailiopoulos. <em>Optimal lottery tickets via SubsetSum: logarithmic overparameterization is sufficient.</em> NeurIPS 2020.</p>
+
+  <p><span class="rk">[Orseau et al., 2020]</span> L. Orseau, M. Hutter, O. Rivasplata. <em>Logarithmic pruning is all you need.</em> NeurIPS 2020.</p>
+
+  <p><span class="rk">[Lueker, 1998]</span> G. S. Lueker. <em>Exponentially small bounds on the expected optimum of the partition and subset sum problems.</em> Random Structures &amp; Algorithms, 12(1), 1998.</p>
+
+  <p><span class="rk">[Ramanujan et al., 2020]</span> V. Ramanujan, M. Wortsman, A. Kembhavi, A. Farhadi, M. Rastegari. <em>What's hidden in a randomly weighted neural network?</em> CVPR 2020.</p>
+
+  <p><span class="rk">[Frankle &amp; Carbin, 2019]</span> J. Frankle, M. Carbin. <em>The lottery ticket hypothesis: finding sparse, trainable neural networks.</em> ICLR 2019.</p>
+
+  <p><span class="rk">[da Cunha et al., 2022]</span> A. da Cunha, E. Natale, L. Viennot. <em>Proving the strong lottery ticket hypothesis for convolutional neural networks.</em> ICLR 2022.</p>
+
+  <p><span class="rk">[Ferbach et al., 2023]</span> D. Ferbach, C. Tsirigotis, G. Gidel, J. Bose. <em>A general framework for proving the equivariant strong lottery ticket hypothesis.</em> ICLR 2023.</p>
+
+  <p><span class="rk">[Otsuka et al., 2025]</span> H. Otsuka, D. Chijiwa, Á. L. García-Arias, Y. Okoshi, K. Kawamura, T. V. Chu, D. Fujiki, S. Takeuchi, M. Motomura. <em>The strong lottery ticket hypothesis for multi-head attention mechanisms.</em> AAAI 2025 (arXiv:2511.04217).</p>
+
+  <p><span class="rk">[Burkholz, 2022]</span> R. Burkholz. <em>Convolutional and residual networks provably contain lottery tickets.</em> ICML 2022.</p>
+
+  <p><span class="rk">[Hall, 1935]</span> P. Hall. <em>On representatives of subsets.</em> Journal of the London Mathematical Society, 10(1), 1935.</p>
+
+  <p><span class="rk">[Yehudai &amp; Shamir, 2019]</span> G. Yehudai, O. Shamir. <em>On the power and limitations of random features for understanding neural networks.</em> NeurIPS 2019.</p>
+</div>
+
+    </div>
+  </article>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="site-footer">
+    &copy; 2026 · <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">Source</a> · Hosted on GitHub Pages
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: "$$", right: "$$", display: true},
+          {left: "\\[", right: "\\]", display: true},
+          {left: "\\(", right: "\\)", display: false},
+          {left: "$", right: "$", display: false}
+        ],
+        throwOnError: false
+      });
+    });
+  </script>
+</body>
+</html>
