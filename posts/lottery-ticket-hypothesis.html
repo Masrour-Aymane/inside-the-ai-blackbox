@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Lottery Ticket Hypothesis as a Pigeonhole Argument</title>
+  <title>The Lottery Ticket Hypothesis — Inside the AI Blackbox</title>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
@@ -11,10 +11,16 @@
 </head>
 <body>
 
+  <!-- Reading Progress -->
+  <div class="reading-progress"></div>
+
   <!-- ═══ Header ═══ -->
   <header class="site-header">
     <div class="site-header-inner">
-      <a href="../index.html" class="site-logo"><span>&bull;</span> my blog</a>
+      <a href="../index.html" class="site-logo">
+        <span class="logo-box">■</span>
+        Inside the AI Blackbox
+      </a>
       <nav>
         <ul class="site-nav">
           <li><a href="../index.html">Posts</a></li>
@@ -32,8 +38,10 @@
       <p class="subtitle">Why overparameterized random networks contain winning subnetworks, what this proves, and what it leaves open for practitioners.</p>
       <div class="article-meta">
         <span>April 2026</span>
-        <span>&middot;</span>
+        <span>·</span>
         <span>Deep Learning</span>
+        <span>·</span>
+        <span>~25 min read</span>
       </div>
     </div>
 
@@ -478,9 +486,10 @@ Given the gaps identified in Section 8, here is what the theory and experiments 
 
   <!-- ═══ Footer ═══ -->
   <footer class="site-footer">
-    &copy; 2026 &middot; Built with plain HTML &middot; Hosted on GitHub Pages
+    &copy; 2026 · <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">Source</a> · Hosted on GitHub Pages
   </footer>
 
+  <script src="../js/main.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       renderMathInElement(document.body, {
