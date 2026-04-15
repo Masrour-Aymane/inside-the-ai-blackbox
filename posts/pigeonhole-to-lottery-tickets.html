@@ -8,191 +8,232 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
-
-  <!-- ═══ Article-specific styles: exact match to the standalone file ═══ -->
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400&display=swap');
 
-    .article-content {
-      font-family: 'Cormorant Garamond', 'Georgia', serif;
-      font-size: 19px;
-      line-height: 1.78;
-      color: #181410;
-    }
+  :root {
+    --bg: #fdfcfa;
+    --fg: #181410;
+    --fg-dim: #5c5347;
+    --accent: #9b2226;
+    --accent-glow: #9b222612;
+    --green: #3d5a3e;
+    --blue: #2c4a6e;
+    --gold: #8b6914;
+    --border: #d6cfc2;
+    --block-bg: #f5f2ec;
+    --remark-bg: #edf1f7;
+    --warn-bg: #fdf4ea;
+    --proof-bg: #f9f7f3;
+    --serif: 'Cormorant Garamond', 'Georgia', serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
 
-    .article-content h2 {
-      font-family: 'Cormorant Garamond', 'Georgia', serif;
-      font-size: 1.45em;
-      font-weight: 700;
-      margin-top: 60px;
-      margin-bottom: 18px;
-      color: #181410;
-      letter-spacing: -0.01em;
-      padding-bottom: 7px;
-      border-bottom: 1.5px solid #d6cfc2;
-    }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    .article-content h2 .sn {
-      color: #9b2226;
-      margin-right: 5px;
-      font-weight: 600;
-    }
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 19px;
+    line-height: 1.78;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    .article-content h3 {
-      font-family: 'Cormorant Garamond', 'Georgia', serif;
-      font-size: 1.12em;
-      font-weight: 600;
-      margin-top: 36px;
-      margin-bottom: 12px;
-      color: #181410;
-    }
+  .container {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 72px 28px 140px;
+  }
 
-    .article-content p { margin-bottom: 17px; }
+  header { margin-bottom: 52px; }
 
-    .article-content .box {
-      padding: 22px 26px;
-      margin: 28px 0;
-      border-radius: 5px;
-    }
+  h1 {
+    font-size: 2.3em;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 10px;
+    letter-spacing: -0.015em;
+    color: var(--fg);
+  }
 
-    .article-content .box-title {
-      font-weight: 700;
-      font-size: 0.88em;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 11px;
-      line-height: 1.4;
-    }
+  .subtitle {
+    font-size: 1.08em;
+    font-style: italic;
+    color: var(--fg-dim);
+    margin-bottom: 0;
+    font-weight: 400;
+    line-height: 1.6;
+  }
 
-    .article-content .thm { background: #f5f2ec; border-left: 3.5px solid #9b2226; }
-    .article-content .thm .box-title { color: #9b2226; }
+  h2 {
+    font-size: 1.45em;
+    font-weight: 700;
+    margin-top: 60px;
+    margin-bottom: 18px;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+    padding-bottom: 7px;
+    border-bottom: 1.5px solid var(--border);
+  }
 
-    .article-content .defn { background: #f5f2ec; border-left: 3.5px solid #3d5a3e; }
-    .article-content .defn .box-title { color: #3d5a3e; }
+  h2 .sn {
+    color: var(--accent);
+    margin-right: 5px;
+    font-weight: 600;
+  }
 
-    .article-content .lem { background: #f4f1e8; border-left: 3.5px solid #8b6914; }
-    .article-content .lem .box-title { color: #8b6914; }
+  h3 {
+    font-size: 1.12em;
+    font-weight: 600;
+    margin-top: 36px;
+    margin-bottom: 12px;
+    color: var(--fg);
+  }
 
-    .article-content .rmk { background: #edf1f7; border-left: 3.5px solid #2c4a6e; }
-    .article-content .rmk .box-title { color: #2c4a6e; }
+  p { margin-bottom: 17px; }
 
-    .article-content .warn { background: #fdf4ea; border-left: 3.5px solid #c07000; }
-    .article-content .warn .box-title { color: #c07000; }
+  .box {
+    padding: 22px 26px;
+    margin: 28px 0;
+    border-radius: 5px;
+  }
 
-    .article-content .prf {
-      background: #f9f7f3;
-      border-left: 3.5px solid #a89878;
-      margin: 28px 0;
-      padding: 22px 26px;
-      border-radius: 5px;
-    }
-    .article-content .prf .box-title { color: #7a6b50; }
-    .article-content .prf .qed { text-align: right; font-size: 1.15em; margin-top: 8px; margin-bottom: 0; }
+  .box-title {
+    font-weight: 700;
+    font-size: 0.88em;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 11px;
+    line-height: 1.4;
+  }
 
-    .article-content .example {
-      background: #f2f7f2;
-      border-left: 3.5px solid #5a8a5c;
-      padding: 22px 26px;
-      margin: 28px 0;
-      border-radius: 5px;
-    }
-    .article-content .example .box-title { color: #3d6a3f; }
+  .thm { background: var(--block-bg); border-left: 3.5px solid var(--accent); }
+  .thm .box-title { color: var(--accent); }
 
-    .article-content blockquote {
-      border-left: 3px solid #d6cfc2;
-      padding-left: 22px;
-      margin: 22px 0;
-      color: #5c5347;
-      font-style: italic;
-    }
+  .defn { background: var(--block-bg); border-left: 3.5px solid var(--green); }
+  .defn .box-title { color: var(--green); }
 
-    .article-content .eq {
-      margin: 22px 0;
-      overflow-x: auto;
-      text-align: center;
-      padding: 8px 0;
-    }
+  .lem { background: #f4f1e8; border-left: 3.5px solid var(--gold); }
+  .lem .box-title { color: var(--gold); }
 
-    .article-content .toc {
-      background: #f5f2ec;
-      padding: 22px 30px;
-      border-radius: 5px;
-      margin: 32px 0 48px;
-      border: none;
-    }
+  .rmk { background: var(--remark-bg); border-left: 3.5px solid var(--blue); }
+  .rmk .box-title { color: var(--blue); }
 
-    .article-content .toc-title {
-      font-weight: 700;
-      font-size: 0.86em;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-bottom: 12px;
-      color: #9b2226;
-    }
+  .warn { background: var(--warn-bg); border-left: 3.5px solid #c07000; }
+  .warn .box-title { color: #c07000; }
 
-    .article-content .toc ol {
-      list-style: none;
-      counter-reset: toc;
-      padding-left: 0;
-    }
+  .prf {
+    background: var(--proof-bg);
+    border-left: 3.5px solid #a89878;
+    margin: 28px 0;
+    padding: 22px 26px;
+    border-radius: 5px;
+  }
+  .prf .box-title { color: #7a6b50; }
+  .prf .qed { text-align: right; font-size: 1.15em; margin-top: 8px; margin-bottom: 0; }
 
-    .article-content .toc li {
-      counter-increment: toc;
-      margin-bottom: 5px;
-      font-size: 0.96em;
-      color: #5c5347;
-    }
+  .example {
+    background: #f2f7f2;
+    border-left: 3.5px solid #5a8a5c;
+    padding: 22px 26px;
+    margin: 28px 0;
+    border-radius: 5px;
+  }
+  .example .box-title { color: #3d6a3f; }
 
-    .article-content .toc li::before {
-      content: counter(toc) ". ";
-      color: #9b2226;
-      font-weight: 600;
-    }
+  blockquote {
+    border-left: 3px solid var(--border);
+    padding-left: 22px;
+    margin: 22px 0;
+    color: var(--fg-dim);
+    font-style: italic;
+  }
 
-    .article-content .chain-diagram {
-      text-align: center;
-      margin: 32px 0;
-      padding: 20px 16px;
-      background: #f5f2ec;
-      border-radius: 5px;
-      overflow-x: auto;
-      font-size: 0.96em;
-      line-height: 1.9;
-    }
+  .eq {
+    margin: 22px 0;
+    overflow-x: auto;
+    text-align: center;
+    padding: 8px 0;
+  }
 
-    .article-content .refs {
-      margin-top: 60px;
-      padding-top: 22px;
-      border-top: 1.5px solid #d6cfc2;
-      font-size: 0.88em;
-      line-height: 1.65;
-      color: #5c5347;
-    }
-    .article-content .refs h2 { border-bottom: none; margin-top: 0; }
-    .article-content .refs p { margin-bottom: 8px; }
-    .article-content .refs .rk { font-weight: 600; color: #181410; }
+  .toc {
+    background: var(--block-bg);
+    padding: 22px 30px;
+    border-radius: 5px;
+    margin: 32px 0 48px;
+  }
 
-    .article-content em { font-style: italic; }
-    .article-content strong { font-weight: 600; }
+  .toc-title {
+    font-weight: 700;
+    font-size: 0.86em;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+    color: var(--accent);
+  }
 
-    .article-content .katex-display { margin: 14px 0 !important; }
-    .article-content .katex { font-size: 1.02em; }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+    padding-left: 0;
+  }
 
-    @media (max-width: 600px) {
-      .article-content { font-size: 17px; }
-      .article-content h2 { font-size: 1.2em; }
-      .article-content .box,
-      .article-content .prf,
-      .article-content .example { padding: 16px 18px; }
-    }
+  .toc li {
+    counter-increment: toc;
+    margin-bottom: 5px;
+    font-size: 0.96em;
+    color: var(--fg-dim);
+  }
+
+  .toc li::before {
+    content: counter(toc) ". ";
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .chain-diagram {
+    text-align: center;
+    margin: 32px 0;
+    padding: 20px 16px;
+    background: var(--block-bg);
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: 0.96em;
+    line-height: 1.9;
+  }
+
+  .refs {
+    margin-top: 60px;
+    padding-top: 22px;
+    border-top: 1.5px solid var(--border);
+    font-size: 0.88em;
+    line-height: 1.65;
+    color: var(--fg-dim);
+  }
+  .refs h2 { border-bottom: none; margin-top: 0; }
+  .refs p { margin-bottom: 8px; }
+  .refs .rk { font-weight: 600; color: var(--fg); }
+
+  em { font-style: italic; }
+  strong { font-weight: 600; }
+
+  .katex-display { margin: 14px 0 !important; }
+  .katex { font-size: 1.02em; }
+
+  @media (max-width: 600px) {
+    .container { padding: 36px 16px 80px; }
+    h1 { font-size: 1.65em; }
+    h2 { font-size: 1.2em; }
+    body { font-size: 17px; }
+    .box, .prf, .example { padding: 16px 18px; }
+  }
   </style>
 </head>
 <body>
 
-  <!-- Reading Progress -->
   <div class="reading-progress"></div>
 
-  <!-- ═══ Header ═══ -->
   <header class="site-header">
     <div class="site-header-inner">
       <a href="../index.html" class="site-logo">
@@ -208,20 +249,17 @@
     </div>
   </header>
 
-  <!-- ═══ Article ═══ -->
-  <article class="article-container">
-    <div class="article-header">
-      <a href="../index.html" class="article-back">← Back to all posts</a>
-      <h1>From Pigeonholes to Lottery Tickets</h1>
-      <p class="subtitle">A self-contained guide to the combinatorial argument at the heart of neural network pruning — from the pigeonhole principle through random subset sums to the 2025 proof that transformers contain strong lottery tickets.</p>
-      <div class="article-meta">
-        <span>April 2026</span>
-        <span>·</span>
-        <span>Combinatorics / Deep Learning</span>
-      </div>
-    </div>
+  <div class="article-container">
+    <a href="../index.html" class="article-back">← Back to all posts</a>
+  </div>
 
-    <div class="article-content">
+  <!-- Article content uses the ORIGINAL standalone structure -->
+  <div class="container">
+<header>
+<h1>From Pigeonholes to Lottery Tickets</h1>
+<p class="subtitle">A self-contained guide to the combinatorial argument at the heart of neural network pruning — from the pigeonhole principle through random subset sums to the 2025 proof that transformers contain strong lottery tickets.</p>
+</header>
+
 <div class="toc">
   <div class="toc-title">Contents</div>
   <ol>
@@ -944,10 +982,8 @@ The story of the strong lottery ticket hypothesis is, at its core, a story about
   <p><span class="rk">[Yehudai &amp; Shamir, 2019]</span> G. Yehudai, O. Shamir. <em>On the power and limitations of random features for understanding neural networks.</em> NeurIPS 2019.</p>
 </div>
 
-    </div>
-  </article>
+  </div>
 
-  <!-- ═══ Footer ═══ -->
   <footer class="site-footer">
     &copy; 2026 · <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">Source</a> · Hosted on GitHub Pages
   </footer>

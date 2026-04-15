@@ -5,10 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About — Inside the AI Blackbox</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+
+    .about-content {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 48px 28px 120px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 19px;
+      line-height: 1.78;
+      color: #181410;
+    }
+
+    .about-content h1 {
+      font-size: 2.3em;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 28px;
+      letter-spacing: -0.015em;
+    }
+
+    .about-content p {
+      margin-bottom: 17px;
+      color: #5c5347;
+    }
+
+    .about-content a {
+      color: #9b2226;
+      text-decoration: none;
+    }
+
+    .about-content a:hover { color: #c0292e; }
+
+    @media (max-width: 600px) {
+      .about-content {
+        padding: 36px 16px 80px;
+        font-size: 17px;
+      }
+      .about-content h1 { font-size: 1.65em; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ═══ Header ═══ -->
   <header class="site-header">
     <div class="site-header-inner">
       <a href="index.html" class="site-logo">
@@ -24,28 +64,22 @@
     </div>
   </header>
 
-  <!-- ═══ About ═══ -->
-  <main class="article-container">
-    <div class="article-header" style="margin-bottom: 32px; border-bottom: none; padding-bottom: 0;">
-      <h1>About</h1>
-    </div>
-    <div class="article-content">
-      <p>
-        Welcome. This is a personal blog where I write about machine learning, mathematics, and whatever else catches my attention.
-      </p>
-      <p>
-        The posts here tend toward the technical — theorems, proofs, algorithms — but I try to make the ideas accessible and to be honest about what we know versus what we assume.
-      </p>
-      <p>
-        This site is built with plain HTML and CSS, hosted for free on GitHub Pages. No frameworks, no build step, no tracking. Just text.
-      </p>
-      <p>
-        You can find the source code on <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">GitHub</a>.
-      </p>
-    </div>
+  <main class="about-content">
+    <h1>About</h1>
+    <p>
+      Welcome. This is a personal blog where I write about machine learning, mathematics, and whatever else catches my attention.
+    </p>
+    <p>
+      The posts here tend toward the technical — theorems, proofs, algorithms — but I try to make the ideas accessible and to be honest about what we know versus what we assume.
+    </p>
+    <p>
+      This site is built with plain HTML and CSS, hosted for free on GitHub Pages. No frameworks, no build step, no tracking. Just text.
+    </p>
+    <p>
+      You can find the source code on <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">GitHub</a>.
+    </p>
   </main>
 
-  <!-- ═══ Footer ═══ -->
   <footer class="site-footer">
     &copy; 2026 · <a href="https://github.com/masrour-aymane/inside-the-ai-blackbox">Source</a> · Hosted on GitHub Pages
   </footer>
